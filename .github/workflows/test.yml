@@ -1,0 +1,122 @@
+name: test
+
+# Copied from Ekorn-Pipeline's, less what only it needed. Until there's a
+# module in lib/ and tests in t/, the perl, style and coverage jobs fail.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  # By hand, to test a commit again:
+  # gh workflow run test.yml --ref develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Actions are pinned to a commit, as a tag can be moved to other code;
+# the comment beside each says which release it is.
+
+jobs:
+  # The tests on Perl 5.36, the floor, to the newest on Linux, and the
+  # newest on macOS. --with-develop brings yath and UUID with the rest.
+  perl:
+    name: perl ${{ matrix.perl }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        perl: ["5.36", "5.38", "5.40", "5.42", "5.44"]
+        include:
+          - os: macos-26
+            perl: "5.44"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shogo82148/actions-setup-perl@eebc5c886de14ebbfcd2493d49a12007d2c30477 # v1.44.5
+        with:
+          perl-version: ${{ matrix.perl }}
+      - name: dependencies
+        run: cpanm --notest --installdeps --with-develop .
+      - name: yath
+        run: yath test
+
+  # The tests on Windows, at the floor and the newest Perl, as CPAN
+  # Testers found in Ekorn-Pipeline what Linux and macOS don't: text mode
+  # writes "\r\n". yath doesn't support Windows, so prove runs t/, as an
+  # installer would, without the develop modules. Git is told not to
+  # turn LF into CRLF, so the files are as the tarball has them.
+  windows:
+    name: perl ${{ matrix.perl }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025]
+        perl: ["5.36", "5.44"]
+    steps:
+      - name: LF as it is
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shogo82148/actions-setup-perl@eebc5c886de14ebbfcd2493d49a12007d2c30477 # v1.44.5
+        with:
+          perl-version: ${{ matrix.perl }}
+      - name: dependencies
+        run: cpanm --notest --installdeps .
+      - name: prove
+        run: prove -l t
+
+  # Perl::Critic and Perl::Tidy, with the repository's profiles, on the
+  # newest Perl. A file perltidy would change fails, showing the diff.
+  style:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shogo82148/actions-setup-perl@eebc5c886de14ebbfcd2493d49a12007d2c30477 # v1.44.5
+        with:
+          perl-version: "5.44"
+      - name: dependencies
+        run: cpanm --notest --installdeps --with-develop .
+      - name: perlcritic
+        run: perlcritic lib
+      - name: perltidy
+        run: |
+          status=0
+          for f in $(git ls-files 'lib/*.pm' 't/*.t' 'xt/*.t'); do
+            perltidy "$f" | diff -u "$f" - || status=1
+          done
+          exit $status
+
+  # The tests under Devel::Cover, on Perl 5.36, the floor, failing if the
+  # coverage of lib/ falls below the floors in scripts/coverage.
+  coverage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shogo82148/actions-setup-perl@eebc5c886de14ebbfcd2493d49a12007d2c30477 # v1.44.5
+        with:
+          perl-version: "5.36"
+      - name: dependencies
+        run: cpanm --notest --installdeps --with-develop .
+      - name: coverage
+        run: scripts/coverage
+
+  # Secrets in any commit, not only the latest: gitleaks over the whole
+  # history, since all of it is published with the repository. Its release
+  # is checked against its published SHA-256 before it's used.
+  secrets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the whole history
+      - name: gitleaks
+        env:
+          VERSION: 8.30.1
+          SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          tarball="gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$tarball" "https://github.com/gitleaks/gitleaks/releases/download/v$VERSION/$tarball"
+          echo "$SHA256  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --exit-code 1 .
