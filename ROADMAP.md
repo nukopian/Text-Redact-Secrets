@@ -4,7 +4,7 @@ What Text-Redact-Secrets means to do, and why. [Changes](Changes)
 says what each release did, and the [README](README.md) what it is
 now.
 
-Last id: 2026-0003.
+Last id: 2026-0005.
 
 Items come in four groups:
 
@@ -53,7 +53,26 @@ record](docs/changes/2026-0001-gitleaks-rules.md) has the plan.
 
 ## Next
 
-Nothing yet.
+### 2026-0004. New rules made ready by CI, for a release
+
+**Size:** M (3). **Depends on:** 2026-0001.
+
+When `gitleaks-tag.yml` finds a newer gitleaks release, it runs
+`scripts/update-rules` itself, pushes what it writes to a branch named
+for the tag, where the tests and gitleaks run on it, and opens a pull
+request showing the rules added, changed and removed. New rules then
+wait on the maintainer only to read a tested diff, merge it, and
+release, minutes rather than an evening, so that someone needing them
+urgently isn't held up for long. Releasing stays a person's step, as
+D1 and D9 of 2026-0001's record have it: each set of rules installed
+is one a person read and released. The workflow needs permission to
+push a branch and open a pull request, a change to GitHub, so Iain's
+to make.
+
+**Done when:** a run by hand, given an older tag than the module's,
+makes a branch and a pull request whose diff is the rules' change and
+whose checks pass, and `docs/MAINTAINING.md`'s "Updating the rules"
+says how to release from it.
 
 ## Later
 
@@ -84,3 +103,14 @@ closing its issue 2089, and pointed to betterleaks as the next
 gitleaks. Whether betterleaks' rules should join or replace gitleaks'
 as where the module's come from, once its licence, its rules' format
 and how it releases them are checked (2026-0001's D12).
+
+### 2026-0005. Rules supplied by a user
+
+**Added:** 2026-11-15. **Size:** M (3).
+
+A user who can't wait for a release could give `redact` and `find`
+rules of their own, such as a newer `gitleaks.toml`, so that nobody
+waits on the maintainer at all. Against it: reading TOML at run time
+needs a dependency beyond core Perl, and the rules used would no
+longer be a set tested together, which Ekorn-Pipeline's `dump_to`
+relies on. Kept in case someone asks for it.
