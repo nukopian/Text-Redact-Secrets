@@ -3,6 +3,13 @@ This software is copyright (c) 2026 by Iain Campbell.
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
+The exception is the rules for finding secrets, in the module of rules
+that scripts/update-rules generates from gitleaks' config/gitleaks.toml
+(https://github.com/gitleaks/gitleaks). They're gitleaks', copyright (c)
+2019 Zachary Rice, and are under its MIT licence, in LICENSE-gitleaks,
+taken from the same gitleaks tag as the rules. The module names the tag
+and commit they came from.
+
 Terms of the Perl programming language system itself
 
 a) the GNU General Public License as published by the Free

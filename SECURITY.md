@@ -30,8 +30,8 @@ so is a regex that takes too long on text an attacker can choose. A
 rule that misses a kind of secret, or matches what isn't one, comes
 from gitleaks, whose rules these are, and is best reported there; a
 report here is welcome too, as it may be how the rules were carried
-over. A vulnerability in a module that uses this one, such as
-Ekorn::Pipeline, belongs to that project.
+over. A vulnerability in a module that uses this one belongs to that
+project.
 
 ## Supported versions
 

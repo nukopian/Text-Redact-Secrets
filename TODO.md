@@ -3,19 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## Confirm CLAUDE.md stands alone
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** nothing
-
-CLAUDE.md was written from Ekorn-Pipeline's, which stands alone, by
-Iain's choice, importing no shared practice. Iain's global rule is that
-a project imports `@../claude-practice/PRACTICE.md`, the repository
-being public. Ask Iain which this one does: stand alone, as written, or
-import the practice, and trim CLAUDE.md of what it then repeats. Done
-when CLAUDE.md's opening says which, and why.
-
 ## Make the perlbrew libraries
 
 **From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline

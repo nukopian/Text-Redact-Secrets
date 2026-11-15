@@ -7,9 +7,11 @@ and Claude reviews what he writes by hand. The rules below say who does
 what. Each rule comes with the reason for it.
 
 These rules were set up on 2026-11-15, from Ekorn-Pipeline's, where the
-module was designed. Like Ekorn-Pipeline, this file is the whole of
-the rules, and imports no shared practice; Iain is to confirm that
-(TODO.md). How the repository is kept, from every commit to a release
+module was designed. The project stands alone, as Iain decided on
+2026-11-15, as Ekorn-Pipeline does: this file is the whole of its
+rules, and it imports no shared practice; CONTRIBUTING.md, SECURITY.md
+and LICENSE stand alone too, leaning on no other project. How the
+repository is kept, from every commit to a release
 on CPAN, is in [docs/MAINTAINING.md](docs/MAINTAINING.md), with
 commands to paste.
 
@@ -80,9 +82,14 @@ keep secrets out of logs, so it matters most that it's right.
   off only when Iain says so before the commit. Commits Iain makes
   himself are his to sign off.
 - **gitleaks is credited as its MIT licence asks** (D6): its licence and
-  copyright notice ship as a file, fetched from the same tag as the
-  rules; the generated module of rules says in its header where its
-  rules came from; and the POD names gitleaks, the tag and the commit.
+  copyright notice ship as `LICENSE-gitleaks`, which
+  `scripts/update-rules` fetches from the same tag as the rules; the
+  generated module of rules says in its header where its rules came
+  from; the POD names gitleaks, the tag and the commit; and `LICENSE`
+  says the rules are under MIT, and the rest under Perl's terms. The
+  first `LICENSE-gitleaks` came from gitleaks' v8.30.1
+  (83d9cd684c87d95d656c1458ef04895a7f1cbd8e), by hand, before the
+  script was written.
 - The README's Acknowledgements say what Claude did, and what gitleaks
   did. Keep them accurate.
 - **On CPAN, Iain is `Iain Campbell <cpanic@cpan.org>`,** and no other
