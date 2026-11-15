@@ -57,7 +57,10 @@ The settings that sign commits are in the working copy's own
 its first commit. Then switch to `develop`, and install the
 dependencies, including the maintainers' tools, and Minilla, which
 builds the distribution. Minilla isn't in `cpanfile`, so installing
-from `cpanfile` shows that the distribution needs nothing else:
+from `cpanfile` shows that the distribution needs nothing else.
+`OPENSSL_PREFIX` points Net::SSLeay, which CPAN::Uploader needs, at
+Homebrew's OpenSSL 3: the default `openssl` is now 4, which it won't
+compile against:
 
 ```sh
 cd ~/Git/github.com/nukopian/Text-Redact-Secrets
@@ -70,6 +73,7 @@ git config commit.gpgsign true
 git fetch origin
 git switch develop
 git pull --ff-only
+export OPENSSL_PREFIX=/opt/homebrew/opt/openssl@3
 perlbrew exec --with perl-5.36.3@text-redact-secrets cpanm --installdeps --with-develop .
 perlbrew exec --with perl-5.36.3@text-redact-secrets cpanm Minilla
 ```

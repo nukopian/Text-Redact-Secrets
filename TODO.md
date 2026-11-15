@@ -3,21 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## Make the perlbrew libraries
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** nothing
-
-CLAUDE.md's Perl section names a library for each Perl CI covers,
-`perl-5.36.3@text-redact-secrets` to `perl-5.44.0@text-redact-secrets`;
-none exists yet. Making them installs modules, so ask Iain first.
-Each takes the `cpanfile`'s runtime, test and develop modules, and the
-5.36 one Minilla too, as MAINTAINING.md's "A fresh clone" says, and as
-Ekorn-Pipeline's were made on 2026-11-07. Then write `.envrc`, as that
-section says. Done when `perlbrew lib list` shows all five, and
-`perlbrew exec --with perl-5.36.3@text-redact-secrets minil help` runs.
-
 ## Set up GitHub
 
 **From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
