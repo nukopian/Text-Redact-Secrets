@@ -8,13 +8,15 @@ on test => sub {
     requires 'Test2::Plugin::NoWarnings';
 };
 
-# The maintainers' tools, as Ekorn-Pipeline's, less what only it needs.
-# scripts/update-rules will need a TOML parser too; which is Iain's to
-# decide (TODO.md).
+# The maintainers' tools, as Ekorn-Pipeline's, less what only it needs,
+# and what scripts/update-rules needs: TOML::Parser to read gitleaks'
+# rules, and HTTP::Tiny, with IO::Socket::SSL, to fetch them over HTTPS.
 on develop => sub {
     requires 'CPAN::Uploader';
     requires 'Data::Dump';
     requires 'Devel::Cover';
+    requires 'HTTP::Tiny';
+    requires 'IO::Socket::SSL';
     requires 'JSON::PP', '4.18';
     requires 'Minilla';
     requires 'Perl::Critic';
@@ -25,6 +27,7 @@ on develop => sub {
     requires 'Test2::Harness';
     requires 'Test2::Plugin::Cover';
     requires 'Test::Spellunker';
+    requires 'TOML::Parser';
     requires 'UUID';
     requires 'Version::Next';
 };

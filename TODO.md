@@ -3,21 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## The script's dependencies
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** nothing
-
-`scripts/update-rules` reads `config/gitleaks.toml`: TOML 1.0, with
-literal strings in `'''` and arrays of tables (`[[rules]]`,
-`[[rules.allowlists]]`), so it needs a TOML parser, such as
-TOML::Tiny; and it fetches over HTTPS, with HTTP::Tiny, core, which
-needs IO::Socket::SSL and Net::SSLeay, or with `curl`. Adding a
-dependency is Iain's decision; these are for the script only, so
-they'd go under `on develop` in `cpanfile`, and users never install
-them. Done when `cpanfile` lists what Iain chose.
-
 ## How a version shows a change to the interface
 
 **From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
@@ -48,8 +33,11 @@ weekly CI job that fails when the module's gitleaks tag isn't
 gitleaks' latest, as Iain chose for D9 on 2026-11-15. Until there's a
 module and tests, CI's perl, style and coverage jobs fail. The first
 test with a made-up AWS key, built from pieces as CLAUDE.md's Tests
-say, shows the rule works by passing CI's `secrets` job. Done when the
-item is in Now and its record has its plan.
+say, shows the rule works by passing CI's `secrets` job.
+`scripts/update-rules` reads the rules with TOML::Parser and fetches
+them with HTTP::Tiny, as Iain chose on 2026-11-15, passing
+`verify_SSL => 1`, as 5.36's HTTP::Tiny doesn't verify certificates
+by default. Done when the item is in Now and its record has its plan.
 
 ## Make and protect `main`, at the first release
 
