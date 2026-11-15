@@ -10,7 +10,7 @@ use POSIX      qw(log2);
 use Text::Redact::Secrets::Rules::Dist;
 use Text::Redact::Secrets::Rules::Gitleaks;
 
-our $VERSION = 'v1.0.0';
+our $VERSION = 'v1.0.1';
 
 our @EXPORT_OK = qw(find redact);
 
