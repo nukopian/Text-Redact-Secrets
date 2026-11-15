@@ -205,6 +205,9 @@ what was Iain's, and what was gitleaks'.
   `join '', 'AKIA', 'QZJTMADEUPKEYQZJ'`. Nothing is allowlisted,
   neither `t/` nor a line with `gitleaks:allow`, so a real secret
   pasted into a test is still found. Iain decided this on 2026-11-15.
+  The one exception is `.gitleaksignore`, which passes over a single
+  finding in history that isn't a secret, by its fingerprint, each a
+  decision of Iain's with its reason (2026-0001's D14).
 - **Coverage has floors, which it mustn't fall below.**
   `scripts/coverage` runs the tests under Devel::Cover, from an empty
   `cover_db`, and fails if the coverage of `lib/` falls below the floors
@@ -265,6 +268,9 @@ what was Iain's, and what was gitleaks'.
   work of its own. Each is a `##` heading saying who it's from, the
   date and what it's about, with a **From:** line. The session it's for
   removes each once read, in a commit saying what came of it.
+  A message never holds a secret whole, made-up or not: it's built
+  from pieces, as a test's is, or left out, as history can't be
+  taken back (D14).
 - **Tasks and messages for Ekorn-Pipeline go in its `TODO.md`,** on its
   `develop`, sent as `docs: a task from Text-Redact-Secrets: ...` or
   `docs: a message from Text-Redact-Secrets: ...`, committing only that

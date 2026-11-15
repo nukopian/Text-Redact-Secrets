@@ -12,7 +12,8 @@ secret as gitleaks picks it out. D9 settled: rules pinned to a gitleaks
 tag. D10 settled: `redact` and `find`. D11 settled:
 `Text::Redact::Secrets`. D12 settled: rules of its own, beside
 gitleaks', for what gitleaks has none for. D13 settled: a doubled
-repeat merged, for speed. None open.
+repeat merged, for speed. D14 settled: one made-up secret in history
+passed over, by its fingerprint. None open.
 
 **Origin:** Ekorn-Pipeline 2026-0037, added to its roadmap on
 2026-11-15, split from its 2026-0036, and designed there; moved here
@@ -265,6 +266,18 @@ escaped, mostly in the end of a secret that most rules share,
   `privateai-api-token` is still quadratic, more slowly: Perl's engine
   is slow on a lazy repeat followed by a word under `/i`. Making every
   rule take time in step with the text is roadmap 2026-0006.
+- [x] **D14.** A made-up secret in published history? **Pass over
+  that one finding, by its fingerprint, in `.gitleaksignore`,** Iain
+  decided on 2026-11-15, as recommended. Ekorn-Pipeline's message on
+  the cost of `redact`, commit a421a6b25fe2794acf90ff20b9fc61bcce6bfbad,
+  quoted the tests' made-up password whole, beside its key, and was
+  pushed to `develop`; CI's scan of the whole history failed on every
+  push after. It isn't a secret, and rewriting a published branch would
+  mean resetting every clone, Ekorn's session's too, and changing every
+  hash written since. A fingerprint names one finding, its commit, file,
+  rule and line, so nothing else is passed over, and a real secret still
+  fails CI. Messages between the sessions now build a secret from
+  pieces, as tests do, or leave it out.
 
 ## The plan
 

@@ -1,0 +1,9 @@
+# Findings gitleaks may pass over, each by its fingerprint: commit,
+# file, rule and line. Each is one finding in history that isn't a
+# secret, and a decision of Iain's, with its reason; nothing else is
+# passed over, so a real secret still fails CI.
+#
+# A made-up password from the tests, written whole in a message from
+# Ekorn-Pipeline's session, and removed from TODO.md since; roadmap
+# 2026-0001's D14.
+a421a6b25fe2794acf90ff20b9fc61bcce6bfbad:TODO.md:generic-api-key:22
