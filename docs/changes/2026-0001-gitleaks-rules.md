@@ -171,7 +171,9 @@ escaped, mostly in the end of a secret that most rules share,
   repository is set up, as the job is a change to GitHub. gitleaks'
   latest tag on 2026-11-15 was v8.30.1, so the first release's rules
   come from it, or a later one; Background's counts are from `master`,
-  and may differ a little from that tag's.
+  and may differ a little from that tag's. When the repository was set
+  up, on 2026-11-15, Iain chose the weekly CI job; it's built as a step
+  of this item, as it compares gitleaks' latest tag with the module's.
 
   An update, in Text-Redact-Secrets' repository:
 
