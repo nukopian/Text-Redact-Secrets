@@ -1,0 +1,748 @@
+#!/usr/bin/env perl
+# Makes the module of rules, lib/Text/Redact/Secrets/Rules.pm, and its
+# test of gitleaks' false positives, t/gitleaks-false-positives.t, from a
+# gitleaks release tag, as roadmap 2026-0001's record says (D3, D7, D9):
+#
+#   perlbrew exec --with perl-5.36.3@text-redact-secrets scripts/update-rules v8.30.1
+#
+# It fetches the tag's tarball from GitHub, once, into .gitleaks/, which
+# is git-ignored, and reads from it the rules in config/gitleaks.toml,
+# gitleaks' LICENSE, the commit the tag points to, and the false
+# positives in the Go sources the rules are generated from. Each regex is
+# translated as D3 says, and the script stops, naming it, on one it can't
+# translate. If the rules are the same as the module's already, it says
+# so, and writes nothing.
+use v5.36;
+
+use Archive::Tar;
+use Encode     qw(decode);
+use File::Path qw(make_path);
+use FindBin    qw($Bin);
+use HTTP::Tiny;
+use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
+use Perl::Tidy             qw(perltidy);
+use TOML::Parser;
+
+my $MODULE  = 'lib/Text/Redact/Secrets/Rules.pm';
+my $TEST    = 't/gitleaks-false-positives.t';
+my $LICENSE = 'LICENSE-gitleaks';
+my $CACHE   = '.gitleaks';
+my $GO      = 'cmd/generate/config/rules';
+
+# The keys the script knows, at the top of the TOML, in a rule and in an
+# allowlist. Any other stops it, so that a change to gitleaks' format is
+# looked at, not passed over.
+my @TOP_KEYS  = qw(allowlist allowlists minVersion rules title);
+my @RULE_KEYS = qw(
+    allowlist allowlists description entropy id keywords path regex secretGroup
+    tags
+);
+my @ALLOWLIST_KEYS = qw(
+    commits condition description paths regexTarget regexes stopwords
+);
+my %TOP_KEYS       = map { $_ => 1 } @TOP_KEYS;
+my %RULE_KEYS      = map { $_ => 1 } @RULE_KEYS;
+my %ALLOWLIST_KEYS = map { $_ => 1 } @ALLOWLIST_KEYS;
+
+my $tag = shift // die "Usage: scripts/update-rules TAG, such as v8.30.1\n";
+die "Expected a tag such as v8.30.1, not $tag\n"
+    unless $tag =~ m( \A v \d+ \. \d+ \. \d+ \z )x;
+chdir "$Bin/.." or die "Can't change to the repository: $!\n";
+
+my $tarball = fetch($tag);
+my $commit  = commit_of($tarball);
+my %file    = read_tarball($tarball);
+my $config
+    = TOML::Parser->new->parse(decode('UTF-8', $file{'config/gitleaks.toml'}));
+
+my %report;
+my($rules, $globals) = carry($config, \%report);
+
+# Each rule's regex, compiled, to keep what the script writes from
+# looking like a secret to gitleaks or push protection.
+my @SECRETS = map { quiet_qr($_->{regex}) } @$rules;
+
+# In the test, a run of word characters and hyphens longer than 16 is
+# cut into pieces too: push protection takes some of gitleaks' false
+# positives for tokens by patterns of its own, which gitleaks' rules
+# don't match.
+my $CUT_RUNS = 0;
+
+# What perl_literal and clean_source know of the strings written: how
+# many times each must be halved first, the string each piece written is
+# of, and those written in pieces.
+my(%FORCE, %PIECE_OF, %SPLIT);
+
+my $module = module_source($tag, $commit, $rules, $globals);
+if (-e $MODULE) {
+    my($old_tag, $old_commit) = old_source();
+    if ($module eq module_source($old_tag, $old_commit, $rules, $globals)) {
+        say "The rules at $tag are the same as at $old_tag, so there's nothing to do.";
+        exit 0;
+    }
+}
+
+my %rule_ids        = map { $_->{id} => 1 } @$rules;
+my $false_positives = false_positives(\%file, \%rule_ids, \%report);
+my $test            = test_source($tag, $false_positives);
+
+# Written only once all three are made, so that a failure leaves the
+# files as they were.
+spew($MODULE,  $module);
+spew($TEST,    $test);
+spew($LICENSE, $file{LICENSE});
+
+say "Wrote $MODULE, $TEST and $LICENSE from gitleaks $tag ($commit):";
+say "  $report{rules} rules, $report{anchors} anchors written \\z";
+say "  regexes Perl warns of a literal { in: $report{brace_warnings}";
+say "  dropped, as they match file paths: ", join ', ',
+    @{ $report{path_rules} };
+say "  allowlists dropped, as they need a path: $report{path_allowlists}";
+say "  $report{fps} false positives for $report{fp_rules} rules";
+say
+    "  false positives not read, as they aren't string literals: $report{fp_skipped}";
+say "  rules whose false positives are checked against paths, left out: ",
+    join ', ', @{ $report{fp_path_rules} }
+    if @{ $report{fp_path_rules} };
+say "  strings written in pieces, as a rule would find a secret in them: ",
+    scalar keys %SPLIT;
+
+
+# Return the tag and commit of the module of rules as it is, by loading
+# it.
+sub old_source () {
+    my $loaded = do "./$MODULE";
+    die "Can't load $MODULE: ", $@ || $!, "\n" unless $loaded;
+    return Text::Redact::Secrets::Rules::gitleaks_tag(),
+        Text::Redact::Secrets::Rules::gitleaks_commit();
+}
+
+
+# Return a regex of the module's compiled as the module compiles it,
+# with /a, keeping Perl's warning of a literal { quiet.
+sub quiet_qr ($regex) {
+    no warnings qw(regexp);    ## no critic (TestingAndDebugging::ProhibitNoWarnings)
+    return qr($regex)a;        ## no critic (RegularExpressions::RequireExtendedFormatting)
+}
+
+
+# Return the tarball of gitleaks at the tag, fetching it from GitHub if
+# it isn't in the cache.
+sub fetch ($tag) {
+    my $file = "$CACHE/gitleaks-$tag.tar.gz";
+    return $file if -e $file;
+
+    make_path($CACHE);
+    my $url  = "https://github.com/gitleaks/gitleaks/archive/refs/tags/$tag.tar.gz";
+    my $http = HTTP::Tiny->new(
+        agent      => 'Text-Redact-Secrets-update-rules',
+        verify_SSL => 1,
+    );
+    my $response = $http->mirror($url, $file);
+    die "Couldn't fetch $url: $response->{status} $response->{reason}\n"
+        unless $response->{success};
+    return $file;
+}
+
+
+# Return the commit a tarball was made from, which git archive writes
+# into its first header, a pax global header, as a comment.
+sub commit_of ($tarball) {
+    gunzip($tarball => \my $tar) or die "Can't read $tarball: $GunzipError\n";
+    my $type       = substr $tar, 156, 1;
+    my($made_from) = substr($tar, 512, 512) =~ m( comment= ([0-9a-f]{40}) \n )x;
+    die "$tarball doesn't say which commit it was made from\n"
+        unless $type eq 'g' && defined $made_from;
+    return $made_from;
+}
+
+
+# Return the files the script reads from the tarball, by their paths in
+# gitleaks' repository: the rules, the licence, and the Go sources of the
+# rules.
+sub read_tarball ($tarball) {
+    my $tar = Archive::Tar->new($tarball, 1)
+        or die "Can't read $tarball: ${\ Archive::Tar->error }\n";
+    my %files;
+    for my $entry ($tar->get_files) {
+        my($path) = $entry->full_path =~ m( \A [^/]+ / (.+) \z )x or next;
+        $files{$path} = $entry->get_content
+            if $path eq 'config/gitleaks.toml'
+            || $path eq 'LICENSE'
+            || $path =~ m( \A \Q$GO\E / [^/]+ \.go \z )x;
+    }
+    for my $path ('config/gitleaks.toml', 'LICENSE') {
+        die "$tarball has no $path\n" unless defined $files{$path};
+    }
+    return %files;
+}
+
+
+# Return the rules and the global allowlists as the module keeps them:
+# each regex translated, and what applies to files dropped, as D7 says.
+sub carry ($config, $report) {
+    check_keys('the TOML', $config, \%TOP_KEYS);
+    $report->{$_} = 0 for qw(rules anchors path_allowlists brace_warnings);
+    $report->{path_rules} = [];
+
+    my @globals = map { carry_allowlist('the global allowlist', $_, $report) }
+        grep { defined } $config->{allowlist}, @{ $config->{allowlists} // [] };
+
+    my @rules;
+    for my $rule (@{ $config->{rules} }) {
+        my $id = $rule->{id} // die "A rule in the TOML has no id\n";
+        check_keys("rule $id", $rule, \%RULE_KEYS);
+
+        # gitleaks applies a rule with a path only to a file whose path it
+        # matches, so it never finds anything in a string.
+        if (defined $rule->{path}) {
+            push @{ $report->{path_rules} }, $id;
+            next;
+        }
+        die "Rule $id has no regex\n" unless defined $rule->{regex};
+
+        my %carried
+            = (id => $id, regex => translate("rule $id", $rule->{regex}, $report));
+        $carried{entropy}      = $rule->{entropy}     if defined $rule->{entropy};
+        $carried{secret_group} = $rule->{secretGroup} if defined $rule->{secretGroup};
+        $carried{keywords}     = [@{ $rule->{keywords} }] if $rule->{keywords};
+        my @allowlists = map { carry_allowlist("rule ${id}'s allowlist", $_, $report) }
+            grep { defined } $rule->{allowlist}, @{ $rule->{allowlists} // [] };
+        $carried{allowlists} = \@allowlists if @allowlists;
+
+        push @rules, \%carried;
+        $report->{rules}++;
+    }
+    return \@rules, \@globals;
+}
+
+
+# Return an allowlist as the module keeps it, its regexes translated,
+# or nothing if it can't apply to a string: one whose paths or commits
+# must match too, or one with nothing else.
+sub carry_allowlist ($where, $allowlist, $report) {
+    check_keys($where, $allowlist, \%ALLOWLIST_KEYS);
+    my $condition  = $allowlist->{condition} // 'OR';
+    my $needs_file = grep { @{ $allowlist->{$_} // [] } } qw(commits paths);
+    if ($needs_file && $condition eq 'AND') {
+        $report->{path_allowlists}++;
+        return;
+    }
+
+    my %carried;
+    $carried{regexes}
+        = [map { translate($where, $_, $report) } @{ $allowlist->{regexes} }]
+        if @{ $allowlist->{regexes} // [] };
+    $carried{stopwords} = [@{ $allowlist->{stopwords} }]
+        if @{ $allowlist->{stopwords} // [] };
+    return unless %carried;
+    $carried{condition}    = $condition if defined $allowlist->{condition};
+    $carried{regex_target} = $allowlist->{regexTarget}
+        if defined $allowlist->{regexTarget};
+    return \%carried;
+}
+
+
+# Stop on a key the script doesn't know.
+sub check_keys ($where, $hash, $known) {
+    my @unknown = grep { !$known->{$_} } sort keys %$hash;
+    die "$where has keys the script doesn't know: @unknown\n" if @unknown;
+    return;
+}
+
+
+# Return a regex of gitleaks', in Go's RE2, as Perl is to compile it with
+# /a, as D3 says: each $ that's an anchor written \z, found by scanning,
+# as a $ that's escaped or in a character class is a dollar. Stop on one
+# that sets the m flag, or won't compile.
+sub translate ($where, $regex, $report) {
+    my @chars = $regex =~ m( (.) )xsg;
+    my $out   = '';
+    my $class = 0;                       # in a character class
+    for (my $i = 0; $i < @chars; $i++) {
+        my $c = $chars[$i];
+        if ($c eq '\\') {                ## no critic (ControlStructures::ProhibitCascadingIfElse)
+            $out .= $c . ($chars[++$i] // '');
+        }
+        elsif ($class) {
+            if ($c eq '[' && ($chars[$i + 1] // '') eq ':') {    # [:alpha:]
+                my $end = index $regex, ':]', $i + 2;
+                die "In $where, a character class isn't closed: $regex\n" if $end < 0;
+                $out .= substr $regex, $i, $end + 2 - $i;
+                $i    = $end + 1;
+            }
+            else {
+                $class  = 0 if $c eq ']';
+                $out   .= $c;
+            }
+        }
+        elsif ($c eq '[') {
+            $class  = 1;
+            $out   .= $c;
+
+            # A ] first in the class, or after its ^, is part of it.
+            for my $first ('^', ']') {
+                if (($chars[$i + 1] // '') eq $first) {
+                    $out .= $chars[++$i];
+                }
+            }
+        }
+        elsif ($c eq '$') {
+            $out .= '\\z';
+            $report->{anchors}++;
+        }
+        else {
+            if ($c eq '(' && ($chars[$i + 1] // '') eq '?') {
+                my($flags) = substr($regex, $i + 2) =~ m( \A ([a-zA-Z]*) [-:\)] )x;
+                die "In $where, a regex sets the m flag, which can't be translated: $regex\n"
+                    if defined $flags && $flags =~ m( m )x;
+            }
+            $out .= $c;
+        }
+    }
+    die "In $where, a character class isn't closed: $regex\n" if $class;
+    my @warnings;
+    local $SIG{__WARN__} = sub ($warning) { push @warnings, $warning };
+    if (!eval { qr($out)a; 1 }) {    ## no critic (RegularExpressions::RequireExtendedFormatting)
+        chomp(my $error = $@);
+        die "In $where, a regex won't compile in Perl: $regex\n$error\n";
+    }
+    $report->{brace_warnings}++ if @warnings;
+    return $out;
+}
+
+
+# Return the false positives each rule is checked against in gitleaks'
+# Go sources, by rule id, as lists of strings: those of
+# `fps := []string{...}` that are string literals, or literals joined by
+# +. A rule whose false positives are a map, checked against paths, is
+# left out, as the module has no paths.
+sub false_positives ($file, $rule_ids, $report) {
+    my %fps;
+    $report->{$_} = 0 for qw(fps fp_rules fp_skipped);
+    $report->{fp_path_rules} = [];
+    for my $path (sort grep { m( \A \Q$GO\E / )x } keys %$file) {
+        my $go = decode('UTF-8', $file->{$path});
+        for my $func (split m( ^ (?= func \  ) )xm, $go) {
+            my($id) = $func =~ m( RuleID: \s* "([^"]+)" )x or next;
+            next unless $rule_ids->{$id};
+            if ($func =~ m( \b fps \ := \ map\[string\]string\{ )x) {
+                push @{ $report->{fp_path_rules} }, $id;
+                next;
+            }
+            $func =~ m( \b fps \ := \ \[\]string\{ )xg or next;
+            my($strings, $skipped) = go_strings($func, pos $func, "$path, rule $id");
+            $report->{fp_skipped} += $skipped;
+            next unless @$strings;
+            push @{ $fps{$id} }, @$strings;
+            $report->{fps} += @$strings;
+            $report->{fp_rules}++;
+        }
+    }
+    return \%fps;
+}
+
+
+# Read the elements of a Go composite literal, from just inside its
+# opening brace to its closing one. Return the elements that are string
+# literals, or literals joined by +, and how many weren't.
+sub go_strings ($go, $pos, $where) {
+    my(@strings, $skipped, @parts, $other);
+    my $depth       = 0;
+    my $end_element = sub {
+        if    ($other) { $skipped++ }
+        elsif (@parts) { push @strings, join '', @parts }
+        else {
+            # added by Perltidy
+        }
+        @parts = ();
+        $other = 0;
+    };
+    pos($go) = $pos;
+    while (pos($go) < length $go) {
+        if (    ## no critic (ControlStructures::ProhibitCascadingIfElse)
+            $go    =~ m( \G \s+ )xgc
+            || $go =~ m( \G // [^\n]* )xgc
+            || $go =~ m( \G /\* .*? \*/ )xsgc
+        ) {
+            next;
+        }
+        elsif ($go =~ m( \G ` ([^`]*) ` )xgc) {
+            (my $raw = $1) =~ s( \r )()xg;    # Go drops carriage returns from raw strings
+            if ($depth) { $other = 1 }
+            else        { push @parts, $raw }
+        }
+        elsif ($go =~ m( \G " ((?: [^"\\\n] | \\. )*) " )xgc) {
+            if ($depth) { $other = 1 }
+            else        { push @parts, go_unescape($1, $where) }
+        }
+        elsif ($go =~ m( \G [\{\(\[] )xgc) {
+            $depth++;
+            $other = 1;
+        }
+        elsif ($go =~ m( \G [\}\)\]] )xgc) {
+            if ($depth == 0) {
+                $end_element->();
+                return \@strings, $skipped // 0;
+            }
+            $depth--;
+        }
+        elsif ($go =~ m( \G , )xgc) {
+            $end_element->() if $depth == 0;
+        }
+        elsif ($go =~ m( \G \+ )xgc) {
+            # literals joined by + make one string
+        }
+        elsif ($go =~ m( \G [^\s"`\{\}\(\)\[\],+/]+ | \G / )xgc) {
+            $other = 1;    # an identifier, a call, or anything else
+        }
+        else {
+            last;
+        }
+    }
+    die "In $where, the false positives' list isn't closed\n";
+}
+
+
+# Return the string a Go interpreted string literal's contents stand
+# for.
+sub go_unescape ($s, $where) {
+    my %simple = (
+        a    => "\a",
+        b    => "\b",
+        f    => "\f",
+        n    => "\n",
+        r    => "\r",
+        t    => "\t",
+        v    => "\x0b",
+        '\\' => '\\',
+        q(') => q('),
+        '"'  => '"',
+    );
+    my $escape = qr( [0-7]{3} | x\p{AHex}{2} | u\p{AHex}{4} | U\p{AHex}{8} | . )x;
+    $s =~ s{ \\ ($escape) }{
+        my $e = $1;
+          exists $simple{$e}          ? $simple{$e}
+        : $e =~ m( \A [0-7]{3} \z )x ? chr oct $e
+        : $e =~ m( \A [xuU] .. )x   ? chr hex substr $e, 1
+        : die "In $where, a string has an escape Go doesn't have: \\$e\n"
+    }xge;
+    return $s;
+}
+
+
+# Return the source of the module of rules.
+sub module_source ($tag, $commit, $rules, $globals) {
+    return clean_source(
+        $MODULE,
+        sub {
+            my $rules_src   = perl_value($rules);
+            my $globals_src = perl_value($globals);
+            my $tag_src     = perl_literal($tag);
+            my $commit_src  = perl_literal($commit);
+            return tidy(<<"END");
+# Generated by scripts/update-rules from gitleaks' config/gitleaks.toml,
+# at its tag $tag, https://github.com/gitleaks/gitleaks; gitleaks_commit
+# gives the commit. Don't edit it: run the script again. The rules are
+# gitleaks', copyright (c) 2019 Zachary Rice, under the MIT licence in
+# LICENSE-gitleaks. A string a rule would find a secret in is written in
+# pieces, so that no line holds it.
+use v5.36;
+
+package Text::Redact::Secrets::Rules;
+
+# The gitleaks tag the rules came from.
+sub gitleaks_tag () {
+    return $tag_src;
+}
+
+
+# The commit the tag points to.
+sub gitleaks_commit () {
+    return $commit_src;
+}
+
+
+# The allowlists that apply to every rule.
+sub global_allowlists () {
+    return $globals_src;
+}
+
+
+# The rules, in gitleaks' order.
+sub rules () {
+    return $rules_src;
+}
+
+1;
+
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+Text::Redact::Secrets::Rules - gitleaks' rules, for Text::Redact::Secrets
+
+=head1 DESCRIPTION
+
+The rules Text::Redact::Secrets finds secrets by: gitleaks'
+F<config/gitleaks.toml>, at its tag $tag, carried over by the
+repository's F<scripts/update-rules>. Each regex is as gitleaks has it,
+but for each C<\$> that's an anchor, written C<\\z>, so that it means
+the end of the text, as it does in Go; each is to be compiled with
+C</a>. A rule or allowlist that applies only to files is left out.
+
+=head1 FUNCTIONS
+
+=head2 gitleaks_tag
+
+The gitleaks tag the rules came from, such as C<$tag>.
+
+=head2 gitleaks_commit
+
+The commit the tag points to.
+
+=head2 global_allowlists
+
+A reference to a list of the allowlists that apply to every rule, each
+a hash of its C<regexes> and C<stopwords>, and its C<condition> and
+C<regex_target> if gitleaks gives them.
+
+=head2 rules
+
+A reference to a list of the rules, in gitleaks' order, each a hash of
+its C<id>, its C<regex>, and its C<entropy>, C<secret_group>,
+C<keywords> and C<allowlists> if gitleaks gives them.
+
+=head1 LICENSE
+
+The rules are gitleaks', copyright (c) 2019 Zachary Rice, under the MIT
+licence in F<LICENSE-gitleaks>.
+
+=cut
+END
+        },
+    );
+}
+
+
+# Return the source of the test of gitleaks' false positives.
+sub test_source ($tag, $fps) {
+    $CUT_RUNS = 1;
+    my $source = clean_source(
+        $TEST,
+        sub {
+            my $fps_src = perl_value($fps);
+            return tidy(<<"END");
+# Generated by scripts/update-rules from gitleaks' Go sources, at its
+# tag $tag, in $GO. Don't edit it: run the script
+# again.
+#
+# Each is a false positive gitleaks checks its rule against: text the
+# rule mustn't find a secret in. One that another rule would find a
+# secret in, or with a run of more than 16 word characters, is written
+# in pieces, as CLAUDE.md's Tests say, so that gitleaks and push
+# protection don't take it for one.
+use v5.36;
+use Test2::V0;
+use Test2::Plugin::NoWarnings;
+
+use Text::Redact::Secrets qw(find);
+
+my \$false_positives = $fps_src;
+
+for my \$rule (sort keys \%\$false_positives) {
+    subtest \$rule => sub {
+        my \$n = 0;
+        for my \$text (\@{ \$false_positives->{\$rule} }) {
+            \$n++;
+            is [grep { \$_->{rule} eq \$rule } find(\$text)], [],
+                "false positive \$n";
+        }
+    };
+}
+
+done_testing;
+END
+        },
+    );
+    $CUT_RUNS = 0;
+    return $source;
+}
+
+
+# Return Perl source for a value: a string, or a reference to a list or
+# a hash of them. Numbers are written as strings, which Perl reads as
+# numbers where they're used as numbers, so that a keyword such as 007
+# keeps its zeros.
+sub perl_value ($value) {
+    if (ref $value eq 'ARRAY') {
+        return '[' . join('', map { perl_value($_) . ",\n" } @$value) . ']';
+    }
+    if (ref $value eq 'HASH') {
+        my @pairs = map { perl_string($_) . ' => ' . perl_value($value->{$_}) . ",\n" }
+            sort keys %$value;
+        return '{' . join('', @pairs) . '}';
+    }
+    return perl_literal($value);
+}
+
+
+# Return Perl source for a string, in pieces joined by . if a rule's
+# regex would match it whole, so that no line holds it, as CLAUDE.md's
+# Tests say: the piece the first match starts in is halved, until none
+# does. A string clean_source has found a match starting in is halved
+# first, once for each time it has.
+sub perl_literal ($s) {
+    my @pieces = ($s);
+    for (1 .. $FORCE{$s} // 0) {
+        @pieces = map { halves($_) } @pieces;
+    }
+    @pieces = map { cut_runs($_) } @pieces if $CUT_RUNS;
+    my $source;
+    while (
+        defined(
+            my $at = first_match($source = join ' . ', map { perl_string($_) } @pieces))
+    ) {
+
+        # The piece the match starts in, or the ' . ' after it.
+        my(@starts, $start);
+        $start = 0;
+        for my $piece (@pieces) {
+            push @starts, $start;
+            $start += length(perl_string($piece)) + length ' . ';
+        }
+        my $i = 0;
+        $i++ while $i < $#pieces && $starts[$i + 1] <= $at;
+        die "Can't write this without a rule finding a secret in it: $s\n"
+            if length $pieces[$i] < 2;
+        splice @pieces, $i, 1, halves($pieces[$i]);
+    }
+    $PIECE_OF{perl_string($_)} = $s for @pieces;
+    $SPLIT{$s} = 1 if @pieces > 1;
+    return $source;
+}
+
+
+# Return where the first rule's regex to match in the source starts, or
+# nothing if none does.
+sub first_match ($source) {
+    for my $regex (@SECRETS) {
+        return $-[0] if $source =~ $regex;
+    }
+    return;
+}
+
+
+# Return a string in pieces, cut so that none has a run of more than 16
+# word characters and hyphens.
+sub cut_runs ($s) {
+    my @pieces;
+    while ($s =~ m( [\w-]{17} )xa) {
+        my $cut = $-[0] + 16;
+        push @pieces, substr $s, 0, $cut;
+        $s = substr $s, $cut;
+    }
+    return @pieces, $s;
+}
+
+
+# Return a string in two halves, or as it is if it's one character.
+sub halves ($s) {
+    my $half = int(length($s) / 2) or return $s;
+    return substr($s, 0, $half), substr($s, $half);
+}
+
+
+# Return the source a sub makes, made again with the string a rule's
+# regex matches the start of in more pieces, until no rule's regex
+# matches anything in it: a match can run from one string into the next,
+# which checking each string alone doesn't find.
+sub clean_source ($file, $make) {
+    for (1 .. 10) {
+        my $source = $make->();
+        my($at, $match);
+        for my $regex (@SECRETS) {
+            next unless $source =~ $regex;
+            $at    = $-[0];
+            $match = substr $source, $at, $+[0] - $at;
+            last;
+        }
+        return $source unless defined $at;
+
+        my $s = string_at($source, $at);
+        if (!defined $s) {
+            my $line = 1 + (() = substr($source, 0, $at) =~ m( \n )xg);
+            die "In $file, line $line looks like a secret to a rule: $match\n";
+        }
+        $FORCE{$s}++;
+    }
+    die "In $file, a rule still finds a secret after splitting strings ten times\n";
+}
+
+
+# Return the string the script wrote a piece of at an offset in a
+# source, if it wrote one there.
+sub string_at ($source, $at) {
+    for my $text (sort keys %PIECE_OF) {
+        my $pos = -1;
+        while (($pos = index $source, $text, $pos + 1) >= 0 && $pos <= $at) {
+            return $PIECE_OF{$text} if $at < $pos + length $text;
+        }
+    }
+    return;
+}
+
+
+# Return Perl source for a string: single-quoted if it's printable ASCII,
+# otherwise double-quoted, with escapes, so that the source is ASCII.
+sub perl_string ($s) {
+    if ($s =~ m( \A [\x20-\x7e]* \z )x) {
+        $s =~ s( \\ (?= [\\'] | \z ) )(\\\\)xg;
+        $s =~ s( ' )(\\')xg;
+        return "'$s'";
+    }
+    $s =~ s( ([\\"\$\@]) )(\\$1)xg;
+    $s =~ s( \n )(\\n)xg;
+    $s =~ s( \t )(\\t)xg;
+    $s =~ s( ([^\x20-\x7e]) )(sprintf '\\x{%x}', ord $1)xge;
+    return qq("$s");
+}
+
+
+# Return Perl source as perltidy, with the repository's profile, writes
+# it.
+sub tidy ($source) {
+    my $error = perltidy(
+        source      => \$source,
+        destination => \my $tidied,
+        perltidyrc  => '.perltidyrc',
+        argv        => '--nostandard-output --nostandard-error-output',
+        stderr      => \my $stderr,
+        errorfile   => \my $errors,
+    );
+    die "perltidy failed: ", $stderr // $errors // '', "\n" if $error;
+    return $tidied;
+}
+
+
+# Return the contents of a file.
+sub slurp ($file) {
+    open my $fh, '<:raw', $file or die "Can't read $file: $!\n";
+    local $/ = undef;
+    my $contents = <$fh>;
+    close $fh;
+    return $contents;
+}
+
+
+# Write a file, replacing it, and making its directory if need be.
+sub spew ($file, $contents) {
+    my($dir) = $file =~ m( \A (.*) / )x;
+    make_path($dir) if defined $dir;
+    open my $fh, '>:raw', $file or die "Can't write $file: $!\n";
+    print { $fh } $contents;
+    close $fh or die "Can't write $file: $!\n";
+    return;
+}

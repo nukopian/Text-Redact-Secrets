@@ -187,11 +187,15 @@ edited by hand (roadmap 2026-0001's record, D3 and D9). When gitleaks
 tags a release:
 
 1. **Run the script with the tag,** in the project's library. It
-   fetches that tag's `config/gitleaks.toml`, its licence, and the Go
-   sources the false positives are read from; translates each regex;
-   and writes the module and the test, with the tag and commit in the
-   module. It stops on a regex it can't translate, naming it. Set the
-   tag on the first line:
+   fetches that tag's tarball once, into `.gitleaks/`, which is
+   git-ignored, and reads from it `config/gitleaks.toml`, the licence,
+   the commit, and the Go sources the false positives are read from;
+   translates each regex; and writes the module, the test and
+   `LICENSE-gitleaks`, with the tag and commit in the module. A string a
+   rule would find a secret in is written in pieces, as CLAUDE.md's
+   Tests say. It stops on a regex it can't translate, or a key in the
+   TOML it doesn't know, naming it, and writes nothing. Set the tag on
+   the first line:
 
    ```sh
    tag=v8.30.1

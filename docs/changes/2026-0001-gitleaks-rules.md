@@ -302,4 +302,41 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
 
 ## What happened
 
-Nothing yet.
+- **Step 1, the skeleton,** in 4f04e529a47b1f5f4338531148a53f2b14f93aa3:
+  CI passed on every job for the first time. `scripts/coverage` needed
+  JSON::MaybeXS, which joined `cpanfile`'s develop modules.
+- **Step 2, `scripts/update-rules`,** run for v8.30.1: 217 rules
+  carried, 169 anchors written `\z`, all 258 regexes, the rules' and the
+  allowlists', compiling on every Perl from 5.36 to 5.44; 291 false
+  positives for 67 rules, and 35 not read, as they're made by calls,
+  not written as literals. Its `LICENSE-gitleaks` is the one committed
+  by hand. Changes from the plan:
+  - **The commit comes from the tarball,** whose first header, written
+    by `git archive`, names it, so no call to GitHub's API is needed.
+  - **All five rules with a `path` are dropped,** not only the one that
+    matches paths alone. In gitleaks, a rule with a path and a regex
+    runs only on a file whose path matches, so it never finds anything
+    in a string, as `DetectString` scans: `freemius-secret-key`,
+    `hashicorp-tf-password`, `kubernetes-secret-yaml`,
+    `nuget-config-password` and `pkcs12-file`. Carrying them would make
+    the module find more than gitleaks does.
+  - **What it writes is written in pieces where a rule would match
+    it,** as CLAUDE.md's Tests say for secrets: gitleaks found secrets
+    in the false positives of other rules, in the commit hash, which
+    one rule takes for a token when its keyword is in the same file,
+    and in one rule's regex, a literal that matches itself. gitleaks
+    allowlists its own `gitleaks.toml` by path for this; here nothing
+    is allowlisted. The script checks each file it writes, whole,
+    against every rule's regex, splitting further until none matches.
+    Push protection then refused the first push, finding five tokens in
+    the false positives by patterns of its own, which gitleaks' rules
+    don't match, so in the test a run of more than 16 word characters
+    and hyphens is cut into pieces too. 231 strings are in pieces.
+  - **Two allowlist regexes have a literal `{`,** the global
+    allowlist's for `${VAR}` and `curl-auth-user`'s, which RE2 and Perl
+    read alike, but which Perl warns of. The script and `t/02-rules.t`
+    compile them with the warning quiet, and Iain decided on 2026-11-15
+    that the module does too, in step 3, keeping them as gitleaks has
+    them rather than escaping the brace.
+  - **`t/02-rules.t`** checks the module of rules is whole, and keeps
+    coverage at its floors.
