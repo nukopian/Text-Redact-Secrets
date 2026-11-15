@@ -42,6 +42,21 @@ cpanm https://github.com/nukopian/Text-Redact-Secrets.git
 
 It needs Perl 5.36 or later, and nothing beyond its core modules.
 
+## Keeping the rules current
+
+The rules can't be updated where the module is installed. Each set is
+carried over from a gitleaks release, tested, and released as a new
+version: one that brings new rules moves the middle number, as from
+v1.0.0 to v1.1.0. To have the newest rules, install the module again,
+which brings the newest version:
+
+```
+cpanm Text::Redact::Secrets
+```
+
+[Text::Redact::Secrets::Rules::Gitleaks](https://metacpan.org/pod/Text%3A%3ARedact%3A%3ASecrets%3A%3ARules%3A%3AGitleaks) names the gitleaks release
+the installed rules came from.
+
 ## Licence
 
 Copyright (c) 2026 by Iain Campbell. This is free software; you can

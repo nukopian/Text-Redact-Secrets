@@ -37,6 +37,19 @@ Or the latest from GitHub:
 
 It needs Perl 5.36 or later, and nothing beyond its core modules.
 
+=head2 Keeping the rules current
+
+The rules can't be updated where the module is installed. Each set is
+carried over from a gitleaks release, tested, and released as a new
+version: one that brings new rules moves the middle number, as from
+v1.0.0 to v1.1.0. To have the newest rules, install the module again,
+which brings the newest version:
+
+    cpanm Text::Redact::Secrets
+
+L<Text::Redact::Secrets::Rules::Gitleaks> names the gitleaks release
+the installed rules came from.
+
 =head2 Licence
 
 Copyright (c) 2026 by Iain Campbell. This is free software; you can

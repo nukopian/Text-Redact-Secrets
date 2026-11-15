@@ -402,6 +402,25 @@ Where the secret starts in C<$text>, counting from 0.
 
 Returns an empty list if there are none.
 
+=head1 KEEPING THE RULES CURRENT
+
+gitleaks' rules come from one of its releases, which
+L<Text::Redact::Secrets::Rules::Gitleaks> names. To see which:
+
+    perl -MText::Redact::Secrets::Rules::Gitleaks \
+        -E 'say Text::Redact::Secrets::Rules::Gitleaks::gitleaks_tag()'
+
+The rules can't be updated where the module is installed. Each set is
+carried over from a gitleaks release by the distribution's maintainer,
+tested, and released as a new version of the module, so that what's
+installed is always a set that was tested together. A version that
+brings new rules moves the middle number, as from v1.0.0 to v1.1.0; a
+fix moves the last; and a change to what C<redact> or C<find> take or
+return moves the first. To have the newest rules, install the module
+again, which brings the newest version:
+
+    cpanm Text::Redact::Secrets
+
 =head1 DIAGNOSTICS
 
 =over
