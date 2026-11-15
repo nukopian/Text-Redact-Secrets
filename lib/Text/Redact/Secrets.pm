@@ -327,6 +327,8 @@ __END__
 
 =encoding utf8
 
+=for stopwords gitleaks gitleaks' allowlist allowlists regexes LICENSE-gitleaks
+
 =head1 NAME
 
 Text::Redact::Secrets - find secrets in text by gitleaks' rules, and redact them

@@ -28,6 +28,8 @@ __END__
 
 =encoding utf8
 
+=for stopwords gitleaks gitleaks' allowlist allowlists regexes LICENSE-gitleaks
+
 =head1 NAME
 
 Text::Redact::Secrets::Rules::Dist - rules of Text::Redact::Secrets' own
