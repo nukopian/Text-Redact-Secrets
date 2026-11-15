@@ -22,7 +22,7 @@ its id, this line, and "Ekorn-Pipeline" before the ids of that
 repository's items; its 2026-0038 makes its `dump_to` redact with this
 module.
 
-**Started:** 2026-11-15
+**Started:** 2026-11-15, in 7a0ae0656a5eecbddc9d48a6e337aaa3068aefa9
 
 ## Background
 

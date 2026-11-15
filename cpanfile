@@ -11,12 +11,15 @@ on test => sub {
 # The maintainers' tools, as Ekorn-Pipeline's, less what only it needs,
 # and what scripts/update-rules needs: TOML::Parser to read gitleaks'
 # rules, and HTTP::Tiny, with IO::Socket::SSL, to fetch them over HTTPS.
+# JSON::MaybeXS is for Devel::Cover's JSON report, which scripts/coverage
+# reads.
 on develop => sub {
     requires 'CPAN::Uploader';
     requires 'Data::Dump';
     requires 'Devel::Cover';
     requires 'HTTP::Tiny';
     requires 'IO::Socket::SSL';
+    requires 'JSON::MaybeXS';
     requires 'JSON::PP', '4.18';
     requires 'Minilla';
     requires 'Perl::Critic';
