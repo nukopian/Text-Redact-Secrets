@@ -154,8 +154,10 @@ what was Iain's, and what was gitleaks'.
   the tarball.
 - **Regexes from gitleaks are translated as D3 says:** compiled with
   `/a`, each anchor `$` written `\z`, and any that won't compile, or set
-  the `m` flag, stop the script. The rules are kept as gitleaks has
-  them, never improved here.
+  the `m` flag, stop the script; and, as D13 says, the doubled repeat
+  gitleaks' generator begins some with merged into one, which matches
+  the same text and runs far faster in Perl. The rules are kept as
+  gitleaks has them otherwise, never improved here.
 - **No runtime dependency beyond core Perl** without Iain's say: the
   module is meant to be cheap for Ekorn's users to install. The entropy
   check is written here (D5). The dependencies are in `cpanfile`;
@@ -172,7 +174,7 @@ what was Iain's, and what was gitleaks'.
   Each Perl CI covers needs a library of the same name:
   `perl-5.38.5@text-redact-secrets`, `perl-5.40.5@text-redact-secrets`,
   `perl-5.42.3@text-redact-secrets` and
-  `perl-5.44.0@text-redact-secrets`. None is made yet (TODO.md).
+  `perl-5.44.0@text-redact-secrets`, all made on 2026-11-15.
 
 ## Tests
 

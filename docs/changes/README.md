@@ -39,7 +39,7 @@ Small fixes don't need one.
 ```markdown
 # 2026-0001. Title
 
-**Status:** open | in progress | shipped, unreleased | shipped in v0.1.1 | dropped
+**Status:** open | in progress | shipped, unreleased | shipped in v1.0.0 | dropped
 
 **Decisions:** D1 settled: the answer, in a few words. D2 open: the question, in a few words. | None.
 

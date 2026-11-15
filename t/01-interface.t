@@ -22,6 +22,14 @@ subtest 'Text with no secret in it' => sub {
     is [find($text)], [],    'find returns nothing';
 };
 
+subtest "redact leaves the string it's given as it was" => sub {
+    my $text = 'aws_access_key_id = ' . join '', 'AKIA', 'MADEUP', 'FORTESTS',
+        'ZZ';
+    my $copy = $text;
+    isnt redact($text), $text, 'it returns it redacted';
+    is $text,           $copy, 'and the string is as it was';
+};
+
 subtest 'What isn\'t a string croaks, at the caller\'s line' => sub {
     for my $case ([undef, 'undef'], [[], 'a reference']) {
         my($arg, $name) = @$case;

@@ -1,7 +1,8 @@
 requires 'perl', '5.036';
 requires 'Carp';
 requires 'Exporter';
-requires 'experimental';
+requires 'List::Util', '1.33';
+requires 'POSIX';
 
 on test => sub {
     requires 'Test2::V0';

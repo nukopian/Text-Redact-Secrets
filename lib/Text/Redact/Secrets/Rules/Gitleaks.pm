@@ -300,7 +300,7 @@ sub rules () {
                 'meraki',
             ],
             'regex' =>
-                '[\w.-]{0,50}?(?i:[\w.-]{0,50}?(?:(?-i:[Mm]eraki|MERAKI))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([0-9a-f]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
+                '(?i:[\w.-]{0,100}?(?:(?-i:[Mm]eraki|MERAKI))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([0-9a-f]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
         },
         {
             'entropy'  => '3',
@@ -362,7 +362,7 @@ sub rules () {
                 'co_api_key',
             ],
             'regex' =>
-                '[\w.-]{0,50}?(?i:[\w.-]{0,50}?(?:cohere|CO_API_KEY)(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-zA-Z0-9]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
+                '(?i:[\w.-]{0,100}?(?:cohere|CO_API_KEY)(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-zA-Z0-9]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
         },
         {
             'id'       => 'coinbase-access-token',
@@ -2815,7 +2815,7 @@ sub rules () {
                 'okta',
             ],
             'regex' =>
-                '[\w.-]{0,50}?(?i:[\w.-]{0,50}?(?:(?-i:[Oo]kta|OKTA))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(00[\w=\-]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
+                '(?i:[\w.-]{0,100}?(?:(?-i:[Oo]kta|OKTA))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(00[\w=\-]{40})(?:[\x60\'"\s;]|\\\[nr]|\z)',
         },
         {
             'entropy'  => '3',
@@ -2927,7 +2927,7 @@ sub rules () {
                 'private-ai',
             ],
             'regex' =>
-                '[\w.-]{0,50}?(?i:[\w.-]{0,50}?(?:private[_-]?ai)(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{32})(?:[\x60\'"\s;]|\\\[nr]|\z)',
+                '(?i:[\w.-]{0,100}?(?:private[_-]?ai)(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{32})(?:[\x60\'"\s;]|\\\[nr]|\z)',
         },
         {
             'entropy'  => '2',
@@ -3260,7 +3260,7 @@ sub rules () {
                 'sumo',
             ],
             'regex' =>
-                '[\w.-]{0,50}?(?i:[\w.-]{0,50}?(?:(?-i:[Ss]umo|SUMO))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(su[a-zA-Z0-9]{12})(?:[\x60\'"\s;]|\\\[nr]|\z)',
+                '(?i:[\w.-]{0,100}?(?:(?-i:[Ss]umo|SUMO))(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(su[a-zA-Z0-9]{12})(?:[\x60\'"\s;]|\\\[nr]|\z)',
         },
         {
             'entropy'  => '3',
@@ -3428,9 +3428,12 @@ L<gitleaks|https://github.com/gitleaks/gitleaks>, in its
 F<config/gitleaks.toml> at its tag v8.30.1, which is its commit
 83d9cd684c87d95d656cZ<>1458ef04895a7f1cbd8e, carried over by the repository's
 F<scripts/update-rules>. Each regex is as gitleaks has it, but for
-each C<$> that's an anchor, written C<\z>, so that it means the end
-of the text, as it does in Go; each is to be compiled with C</a>. A
-rule or allowlist that applies only to files is left out.
+two things. Each C<$> that's an anchor is written C<\z>, so that it
+means the end of the text, as it does in Go. And a rule that begins
+with two lazy repeats of C<[\w.-]>, one inside the other, begins with
+one of their total length, which matches the same ASCII text, and
+which Perl's engine runs far faster. Each is to be compiled with
+C</a>. A rule or allowlist that applies only to files is left out.
 
 =head1 FUNCTIONS
 

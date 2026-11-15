@@ -18,15 +18,18 @@ becomes the failing test that comes before the fix. If you have a fix in
 mind, sketch it in the issue: it will be written into the code with
 tests, and you'll be thanked by name in `Changes`.
 
-## The rules come from gitleaks
+## The rules
 
-The rules that find secrets are gitleaks', carried over by a script,
-not written here. A rule that misses a kind of secret, or matches what
-isn't one, is best reported to [gitleaks](https://github.com/gitleaks/gitleaks),
-so that everyone using its rules gets the fix; this distribution takes
-it with gitleaks' next release. Report it here when gitleaks finds the
-secret and Text::Redact::Secrets doesn't, as that's how the rule was
-carried over.
+Most of the rules that find secrets are gitleaks', carried over by a
+script, not written here. gitleaks adds no more rules, so a kind of
+secret none of them finds is welcome here, as an issue: it may become
+one of the distribution's own rules, which are written by hand. Report
+it here too when gitleaks finds a secret and Text::Redact::Secrets
+doesn't, as that's how a rule was carried over. A rule of gitleaks'
+that matches what isn't a secret is welcome here as well, so that
+it's known, though it can't be changed here: gitleaks' rules are kept
+as gitleaks has them, and only
+[gitleaks](https://github.com/gitleaks/gitleaks) can fix one.
 
 ## A good bug report
 

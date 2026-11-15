@@ -13,6 +13,10 @@ use Text::Redact::Secrets::Rules::Gitleaks;
 my $rules   = Text::Redact::Secrets::Rules::Gitleaks::rules();
 my $globals = Text::Redact::Secrets::Rules::Gitleaks::global_allowlists();
 
+# The prefix gitleaks' generator begins some rules with, which D13
+# merges into one repeat.
+my $DOUBLED = q{[\w.-]{0,50}?(?i:[\w.-]{0,50}?};
+
 # Each regex, compiled as the module compiles it: with /a, and quiet
 # about a literal {, which Go's RE2 reads as Perl does, but which Perl
 # warns of.
@@ -36,6 +40,8 @@ subtest 'The rules' => sub {
         $ids{$id}++;
         ok defined $rule->{regex},   "$id has a regex";
         ok compiles($rule->{regex}), "${id}'s regex compiles";
+        isnt substr($rule->{regex}, 0, length $DOUBLED), $DOUBLED,
+            "${id}'s regex doesn't begin with the doubled repeat D13 merges";
         for my $allowlist (@{ $rule->{allowlists} // [] }) {
             ok compiles($_), "${id}'s allowlist's regex compiles: $_"
                 for @{ $allowlist->{regexes} // [] };

@@ -13,7 +13,7 @@ Unreleased
     allowlists checked. Beside them is a rule of the module's own,
     url-userinfo-password, for a password in a URL, such as
     postgres://user:password@host/db, which gitleaks has no rule for.
-    A dump of a few hundred rows takes about 10 ms. It needs nothing
-    beyond core Perl, from 5.36.
+    A dump of a few hundred rows takes about 8 ms on a laptop. It needs
+    nothing beyond core Perl, from 5.36.
 
     It ships roadmap 2026-0001.

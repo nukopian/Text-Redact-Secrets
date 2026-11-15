@@ -24,14 +24,29 @@ advisory and in `Changes` if you'd like it.
 
 ## Scope
 
-This policy covers the modules in this distribution: a secret that
-`redact` lets through, where its rule says it shouldn't, is in scope;
-so is a regex that takes too long on text an attacker can choose. A
-rule that misses a kind of secret, or matches what isn't one, comes
-from gitleaks, whose rules these are, and is best reported there; a
-report here is welcome too, as it may be how the rules were carried
-over. A vulnerability in a module that uses this one belongs to that
-project.
+This policy covers the modules in this distribution. Most of their
+rules come from [gitleaks](https://github.com/gitleaks/gitleaks), so a
+report may belong to gitleaks, to us, or to both:
+
+- **A flaw in one of gitleaks' rules**, one that lets through the kind
+  of secret it's meant to find in gitleaks too, is a vulnerability in
+  gitleaks. Please report it privately to gitleaks, as
+  [its security policy](https://github.com/gitleaks/gitleaks/blob/master/SECURITY.md)
+  asks, by its
+  [private vulnerability reporting](https://github.com/gitleaks/gitleaks/security/advisories/new),
+  and privately to us too, as we carry the rule and can warn our users
+  while it's fixed.
+- **A flaw in this distribution** is ours alone: a secret that `redact`
+  lets through where gitleaks wouldn't, a rule carried over wrongly, or
+  a regex that takes too long, in Perl, on text an attacker can choose.
+- **A kind of secret no rule finds** isn't a vulnerability. It's
+  welcome as an ordinary issue, as CONTRIBUTING.md says: gitleaks adds
+  no more rules, but it may become one of ours.
+
+If you're not sure where a report belongs, send it privately to us, as
+above, and we'll pass on to gitleaks whatever is theirs.
+
+A vulnerability in a module that uses this one belongs to that project.
 
 ## Supported versions
 

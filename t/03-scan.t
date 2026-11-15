@@ -35,6 +35,8 @@ subtest 'Keywords: a rule runs only if one of its keywords is in the text' =>
         'one, matched whatever its case';
         is found('tok-abc', [{id => 'all', regex => 'tok-\w+'}]),
         [['all', 'tok-abc', 0]], 'a rule with none always runs';
+        is found('tok-abc', [{id => 'empty', regex => 'tok-\w+', keywords => []}]),
+        [['empty', 'tok-abc', 0]], 'as does one whose list of them is empty';
         is found(
             'sk-ant-1', [
                 {id => 'short', regex => 'sk-ant', keywords => ['sk']},
@@ -154,6 +156,8 @@ subtest 'The line, as gitleaks finds it' => sub {
     is $line->("ab\ncd\rx", 4, 5), "ab\ncd",
         'to a carriage return after the match';
     is $line->("ab\ncdef", 1, 5), "ab\ncd", 'or to where the match ends';
+    is $line->("\nab\ncd", 0, 0), "\nab",
+        'and an empty match at the start, before a newline, as gitleaks has it';
 };
 
 subtest 'A generic rule\'s finding is dropped if a specific one contains it' =>
@@ -183,6 +187,8 @@ subtest 'Findings come in the order they appear, then the rules\' order' =>
         is found('xk1', \@rules), [['a', 'k', 1], ['b', '1', 2]], 'by offset';
         is found('k', [{id => 'b', regex => 'k'}, {id => 'a', regex => 'k'}]),
         [['b', 'k', 0], ['a', 'k', 0]], 'then by rule';
+        is found("caf\x{e9} \x{2603} k=abc", [{id => 'u', regex => 'k=(\w+)'}]),
+        [['u', 'abc', 9]], 'the offset counting characters, not bytes';
     };
 
 subtest 'redact replaces each secret once' => sub {

@@ -11,8 +11,9 @@ It's kept the same way as
 where it was designed, and this guide began as a copy of Ekorn's.
 Minilla builds the distribution, and a release goes to CPAN.
 
-Some of what's here isn't set up yet: the perlbrew libraries, the
-GitHub settings, and the module itself. `TODO.md` lists them.
+Until v1.0.0 is released, `main` doesn't exist, and `develop` is the
+default branch; making and protecting `main` is the last task in
+`TODO.md`.
 
 The working copy is `~/Git/github.com/nukopian/Text-Redact-Secrets`. Perl
 commands run in the project's perlbrew library, named on each command
@@ -111,6 +112,18 @@ cd ~/Git/github.com/nukopian/Text-Redact-Secrets
 perlbrew exec --with perl-5.36.3@text-redact-secrets yath test -L
 perlbrew exec --with perl-5.44.0@text-redact-secrets perlcritic lib
 for f in $(git ls-files 'lib/*.pm' 't/*.t' 'xt/*.t'); do perlbrew exec --quiet --with perl-5.44.0@text-redact-secrets perltidy "$f" | diff -u "$f" -; done
+```
+
+Then look for secrets in the working tree, as CI does in the history.
+`cover_db`, which `scripts/coverage` leaves behind, holds digests that
+look like secrets, but git ignores it, so it's removed first. A file
+that names one of gitleaks' rules, or its keyword, beside a commit
+hash can make the hash look like a secret too:
+
+```sh
+cd ~/Git/github.com/nukopian/Text-Redact-Secrets
+rm -rf cover_db
+gitleaks dir --no-banner .
 ```
 
 To run the tests on every Perl CI covers, each in its own library:
@@ -631,16 +644,16 @@ this list.
   time from pieces, and no line holds a whole one for gitleaks or push
   protection to find; nothing is allowlisted
   ([CLAUDE.md](../CLAUDE.md#tests) has the rule).
-- **Secret scanning and push protection** are to be on, as in
+- **Secret scanning and push protection** are on, as in
   Ekorn-Pipeline: push protection refuses a push with a recognised
   secret in it, before gitleaks would see it. It sees a test's made-up
   secrets too.
-- **Dependabot alerts** are to be on, and **Dependabot security
+- **Dependabot alerts** are on, and **Dependabot security
   updates** off, on purpose: they open pull requests against `main`,
   which moves only at a release. Dependabot doesn't read a `cpanfile`,
   so its alerts cover the workflow's actions, not the Perl
   dependencies.
-- **Private vulnerability reporting** is to be on, so a security
+- **Private vulnerability reporting** is on, so a security
   problem can be reported without an open issue.
 
 To see the settings, and any open alerts:

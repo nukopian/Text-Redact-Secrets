@@ -104,6 +104,7 @@ spew($LICENSE, $file{LICENSE});
 
 say "Wrote $MODULE, $TEST and $LICENSE from gitleaks $tag ($commit):";
 say "  $report{rules} rules, $report{anchors} anchors written \\z";
+say "  doubled prefixes merged, as D13 says: $report{merged}";
 say "  regexes Perl warns of a literal { in: $report{brace_warnings}";
 say "  dropped, as they match file paths: ", join ', ',
     @{ $report{path_rules} };
@@ -192,7 +193,7 @@ sub read_tarball ($tarball) {
 # each regex translated, and what applies to files dropped, as D7 says.
 sub carry ($config, $report) {
     check_keys('the TOML', $config, \%TOP_KEYS);
-    $report->{$_} = 0 for qw(rules anchors path_allowlists brace_warnings);
+    $report->{$_} = 0 for qw(rules anchors path_allowlists brace_warnings merged);
     $report->{path_rules} = [];
 
     my @globals = map { carry_allowlist('the global allowlist', $_, $report) }
@@ -211,8 +212,8 @@ sub carry ($config, $report) {
         }
         die "Rule $id has no regex\n" unless defined $rule->{regex};
 
-        my %carried
-            = (id => $id, regex => translate("rule $id", $rule->{regex}, $report));
+        my $regex   = merge_prefix($rule->{regex}, $report);
+        my %carried = (id => $id, regex => translate("rule $id", $regex, $report));
         $carried{entropy}      = $rule->{entropy}     if defined $rule->{entropy};
         $carried{secret_group} = $rule->{secretGroup} if defined $rule->{secretGroup};
         $carried{keywords}     = [@{ $rule->{keywords} }] if $rule->{keywords};
@@ -250,6 +251,20 @@ sub carry_allowlist ($where, $allowlist, $report) {
     $carried{regex_target} = $allowlist->{regexTarget}
         if defined $allowlist->{regexTarget};
     return \%carried;
+}
+
+
+# Return a rule's regex with the prefix gitleaks' generator writes,
+# [\w.-]{0,50}?(?i:[\w.-]{0,50}?, two lazy repeats of the same
+# characters, one inside the other, merged into one of their total
+# length, as D13 says. They match the same ASCII text, but Perl's engine
+# tries every way of sharing a match between them, 2,500 at each place
+# in the text where gitleaks' tries one, and is quadratic on some text.
+sub merge_prefix ($regex, $report) {
+    $report->{merged}++
+        if $regex
+        =~ s{ \A \Q[\w.-]{0,50}?(?i:[\w.-]{0,50}?\E }{q[(?i:[\w.-]{0,100}?]}ex;
+    return $regex;
 }
 
 
@@ -508,9 +523,12 @@ L<gitleaks|https://github.com/gitleaks/gitleaks>, in its
 F<config/gitleaks.toml> at its tag $tag, which is its commit
 $commit_pod, carried over by the repository's
 F<scripts/update-rules>. Each regex is as gitleaks has it, but for
-each C<\$> that's an anchor, written C<\\z>, so that it means the end
-of the text, as it does in Go; each is to be compiled with C</a>. A
-rule or allowlist that applies only to files is left out.
+two things. Each C<\$> that's an anchor is written C<\\z>, so that it
+means the end of the text, as it does in Go. And a rule that begins
+with two lazy repeats of C<[\\w.-]>, one inside the other, begins with
+one of their total length, which matches the same ASCII text, and
+which Perl's engine runs far faster. Each is to be compiled with
+C</a>. A rule or allowlist that applies only to files is left out.
 
 =head1 FUNCTIONS
 

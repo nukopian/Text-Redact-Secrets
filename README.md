@@ -10,9 +10,9 @@ be safe to write. Text::Redact::Secrets puts `*REDACTED*` in place of
 each secret it finds in a string, with `redact`, or reports each, with
 `find`, by the rules of [gitleaks](https://github.com/gitleaks/gitleaks):
 a maintained set of regexes, keywords, entropies and allowlists,
-carried over from gitleaks unchanged. Beside them are rules of its
-own, for secrets gitleaks has no rule for, such as a password in a
-URL like `postgres://user:password@host/db`.
+carried over from gitleaks with their meaning unchanged. Beside them
+are rules of its own, for secrets gitleaks has no rule for, such as a
+password in a URL like `postgres://user:password@host/db`.
 
 ```perl
 use Text::Redact::Secrets qw(find redact);
@@ -41,6 +41,12 @@ cpanm https://github.com/nukopian/Text-Redact-Secrets.git
 ```
 
 It needs Perl 5.36 or later, and nothing beyond its core modules.
+
+## What it won't find
+
+It finds what its rules describe, and nothing else, so redacted text
+can still hold a secret: a short or ordinary password isn't found, nor
+a secret that's been base64-encoded. The module's POD says more.
 
 ## Keeping the rules current
 

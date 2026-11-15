@@ -92,7 +92,7 @@ sub _compile ($rules, $globals) {
             regex        => _regex($_->{regex}),
             entropy      => $_->{entropy}      // 0,
             secret_group => $_->{secret_group} // 0,
-            keywords     => $_->{keywords} && [map { lc } @{ $_->{keywords} }],
+            keywords     => _keywords($_->{keywords}),
             allowlists   => [map { _compile_allowlist($_) } @{ $_->{allowlists} // [] }],
         }
     } @$rules;
@@ -101,6 +101,15 @@ sub _compile ($rules, $globals) {
         allowlists => [map { _compile_allowlist($_) } @$globals],
         _compile_keywords(map { @{ $_->{keywords} // [] } } @compiled),
     };
+}
+
+
+# Return a rule's keywords, lowercased, as gitleaks does when it loads
+# them, or nothing if it has none, as a rule with none runs on every
+# text.
+sub _keywords ($keywords) {
+    return undef unless $keywords && @$keywords;    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
+    return [map { lc } @$keywords];
 }
 
 
@@ -174,7 +183,7 @@ sub _scan ($text, $compiled) {
 # Return the findings of one rule, as gitleaks' detectRule makes them.
 sub _scan_rule ($text, $rule, $globals) {
     my $regex = $rule->{regex};
-    my @found;
+    my(@found, $newlines);
     while ($text =~ m( $regex )xg) {
         my $start = $-[0];
         my $match = substr $text, $start, $+[0] - $start;
@@ -184,7 +193,8 @@ sub _scan_rule ($text, $rule, $globals) {
         # its trailing newlines would end.
         my($leading) = $match =~ m( \A (\n*) )x;
         $match =~ s( \A \n+ | \n+ \z )()xg;
-        my $line = _line($text, $start, $start + length $match);
+        $newlines //= _newlines($text);
+        my $line = _line($text, $start, $start + length $match, $newlines);
         next if index($line, $ALLOW) >= 0;
 
         my($secret, $offset) = _secret($match, $rule) or next;
@@ -198,7 +208,7 @@ sub _scan_rule ($text, $rule, $globals) {
             rule   => $rule->{id},
             secret => $secret,
             offset => $offset,
-            line   => substr($text, 0, $start) =~ tr(\n)(),
+            line   => _line_number($newlines, $start),
         };
     }
     return @found;
@@ -231,26 +241,49 @@ sub _secret ($match, $rule) {
 }
 
 
+# Return where each newline in a text is.
+sub _newlines ($text) {
+    my @newlines;
+    push @newlines, $-[0] while $text =~ m( \n )xg;
+    return \@newlines;
+}
+
+
+# Return how many newlines come before an offset, so the line it's on,
+# counting from 0.
+sub _line_number ($newlines, $offset) {
+    my($low, $high) = (0, scalar @$newlines);
+    while ($low < $high) {
+        my $middle = int(($low + $high) / 2);
+        if   ($newlines->[$middle] < $offset) { $low  = $middle + 1 }
+        else                                  { $high = $middle }
+    }
+    return $low;
+}
+
+
 # Return the line gitleaks checks a match's allowlists and
 # gitleaks:allow against, as its location() finds it: from the newline
 # before the match, or the start of the text, to the newline after it.
 # A match after the last newline gets the text from its start.
-sub _line ($text, $start, $end) {
-    my @newlines;
-    push @newlines, $-[0] while $text =~ m( \n )xg;
-    @newlines = (length $text) unless @newlines;
+# The newlines are where _newlines found them.
+sub _line ($text, $start, $end, $found = _newlines($text)) {
+    my $newlines = @$found ? $found : [length $text];
 
-    my($previous, $from, $to, $on_a_line) = (0, 0, 0, 0);
-    for my $newline (@newlines) {
-        if ($previous <= $start && $start < $newline) {
-            ($from, $to, $on_a_line) = ($previous, $newline, 1);
-        }
-        $to       = $newline if $previous < $end && $end <= $newline;
-        $previous = $newline;
+    # The newline after the match's start, if there is one.
+    my $after = _line_number($newlines, $start + 1);
+    my($from, $to);
+    if ($after < @$newlines) {
+        ($from, $to) = ($after ? $newlines->[$after - 1] : 0, $newlines->[$after]);
+
+        # The newline at or after the match's end, if it ends after the
+        # text's start.
+        my $ends = _line_number($newlines, $end);
+        $to = $newlines->[$ends] if $ends < @$newlines && $end > 0;
     }
-    if (!$on_a_line) {
+    else {
         my($rest) = substr($text, $end) =~ m( \A ([^\r\n]*) )x;
-        $to = $end + length $rest;
+        ($from, $to) = (0, $end + length $rest);
     }
     $to = $end if $end > $to;
     return substr $text, $from, $to - $from;
@@ -350,7 +383,8 @@ Text::Redact::Secrets - find secrets in text by gitleaks' rules, and redact them
 Text that might hold a secret, such as a dump written to a log, should
 be safe to write. Text::Redact::Secrets finds the secrets in a string
 by gitleaks' rules: a maintained set of regexes, keywords, entropies
-and allowlists, carried over from gitleaks unchanged. C<redact> puts
+and allowlists, carried over from gitleaks with their meaning
+unchanged. C<redact> puts
 C<*REDACTED*> in place of each, and C<find> reports each, with the rule
 that found it.
 
@@ -387,8 +421,9 @@ hash reference:
 
 =item C<rule>
 
-The id of the gitleaks rule that found it, such as
-C<aws-access-token>.
+The id of the rule that found it: one of gitleaks', such as
+C<aws-access-token>, or one of the module's own, such as
+C<url-userinfo-password>.
 
 =item C<secret>
 
@@ -401,6 +436,30 @@ Where the secret starts in C<$text>, counting from 0.
 =back
 
 Returns an empty list if there are none.
+
+Two rules can find secrets that overlap, and each is reported.
+
+=head1 WHAT IT WON'T FIND
+
+It finds what its rules describe, and nothing else, so redacted text
+can still hold a secret. Most rules find a kind of secret by its
+shape, such as an AWS access key id or a private key. The rest, most of
+all C<generic-api-key>, find a value given to a name such as
+C<password> or C<api_key>, but only one long enough and random enough:
+a short or ordinary password, or one with a word in it, isn't found.
+
+gitleaks' command line also decodes base64, hex and percent-encoded
+text, and looks for secrets in what it decodes. This module looks only
+at the text as it is, so it doesn't find a secret that's been encoded.
+Nor does it use gitleaks' rules that look at a file's name, as it
+sees only text.
+
+It takes time in step with the text for nearly every rule: about
+8 milliseconds for a dump of a few hundred rows, on a laptop. A few rules take longer
+on a long run of letters and digits with no space in it, tens of
+thousands of characters, such as a long hex string, if the text also
+holds the rule's keyword: up to about a fifth of a second for
+40,000 characters, on a laptop.
 
 =head1 KEEPING THE RULES CURRENT
 

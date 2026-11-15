@@ -11,7 +11,8 @@ applies to strings carried, what applies to files not. D8 settled: the
 secret as gitleaks picks it out. D9 settled: rules pinned to a gitleaks
 tag. D10 settled: `redact` and `find`. D11 settled:
 `Text::Redact::Secrets`. D12 settled: rules of its own, beside
-gitleaks', for what gitleaks has none for. None open.
+gitleaks', for what gitleaks has none for. D13 settled: a doubled
+repeat merged, for speed. None open.
 
 **Origin:** Ekorn-Pipeline 2026-0037, added to its roadmap on
 2026-11-15, split from its 2026-0036, and designed there; moved here
@@ -242,6 +243,28 @@ escaped, mostly in the end of a secret that most rules share,
   `url-userinfo-password`, finds the password, whatever the scheme,
   with no minimum entropy, as in a URL even a short one is one.
   Raised during the work, so settled after it started.
+- [x] **D13.** A regex Perl runs far more slowly than gitleaks does?
+  **Merge the prefix gitleaks' generator writes,
+  `[\w.-]{0,50}?(?i:[\w.-]{0,50}?`, two lazy repeats of the same
+  characters, one inside the other, into one, `(?i:[\w.-]{0,100}?`,
+  in `scripts/update-rules`,** Iain decided on 2026-11-15, as
+  recommended, when the wash-up before v1.0.0 timed every rule on long
+  text made to be awkward. Go's RE2 can't backtrack, so gitleaks takes
+  time in step with the text; Perl's engine can, and tries every way
+  of sharing a match between the two repeats, 2,500 at each place in
+  the text. Three rules with the prefix took 0.8 to 4 seconds on
+  40,000 characters, one of them, `privateai-api-token`, four times as
+  long each time the text doubled. Merged, the five rules with it find
+  the same in all 554 texts compared with gitleaks, and are 25 to 50
+  times as fast. It's a change to how gitleaks' regexes are written,
+  beyond D3, so it's a decision of its own. The two match the same
+  ASCII text; under `/i`, the merged one also takes the two non-ASCII
+  letters that fold into ASCII ones, the long s and the Kelvin sign,
+  in the first 50 characters, which the inner repeat takes already,
+  and which can only move where a match starts, never its secret.
+  `privateai-api-token` is still quadratic, more slowly: Perl's engine
+  is slow on a lazy repeat followed by a word under `/i`. Making every
+  rule take time in step with the text is roadmap 2026-0006.
 
 ## The plan
 
@@ -476,3 +499,36 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   showed the script's "rules unchanged" check passed over a change to
   how the script writes the module, as it compared two modules both
   written the new way; it now compares the module as it is.
+- **The wash-up before v1.0.0,** a review of the code, tests and docs,
+  found and fixed:
+  - **A rule with an empty list of keywords was never run.** gitleaks
+    runs one on every text; no rule has one at v8.30.1, but one might
+    come. A test checks it now.
+  - **Each match found every newline in the text again,** for its line
+    and its line's number. They're found once a text now, and looked up
+    by halving: a dump takes 8 ms where it took 10, and 23 where it took
+    27 with key-like fields. The same 554 texts find what they did.
+  - **What the docs claimed and nothing tested:** that offsets count
+    characters, not bytes, and that `redact` leaves its argument as it
+    was. Both are tested now.
+  - **What the docs didn't say:** what the module won't find, which the
+    POD and the README now say: a secret no rule describes, a short or
+    ordinary password, an encoded secret, and gitleaks' rules for file
+    names. And `find`'s `rule` can be one of the module's own.
+  - **What had gone stale:** `cpanfile` required `experimental`, which
+    nothing uses, and didn't list `List::Util` or `POSIX`, which the
+    module does; CLAUDE.md said no perlbrew library was made;
+    MAINTAINING.md said the libraries, the GitHub settings and the
+    module weren't set up, and the security settings "were to be on";
+    CONTRIBUTING.md and SECURITY.md sent a missed secret to gitleaks,
+    which adds no more rules; SECURITY.md now says which reports are
+    gitleaks', to send privately by its own policy, which are ours, and
+    to send any it's unsure of to us, to pass on. MAINTAINING.md's
+    checks for every commit now run gitleaks on the working tree, as a
+    commit hash beside a rule's keyword was twice caught looking like a
+    secret.
+- **D13, the doubled repeat merged,** in `scripts/update-rules`, after
+  the wash-up timed every rule on long text made to be awkward. On
+  20,000 characters, the slowest rule took 1.6 seconds, and takes 94 ms
+  now; on 40,000, 187 ms. `t/02-rules.t` checks no rule begins with
+  the doubled repeat, and the POD says what the module costs.
