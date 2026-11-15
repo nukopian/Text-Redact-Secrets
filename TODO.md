@@ -3,19 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## How a version shows a change to the interface
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** nothing; settle before the first release
-
-New rules move the middle number, and a fix the last (D9). A change to
-what `redact` or `find` take or return would break Ekorn-Pipeline's
-`dump_to`, which calls `redact`. Ask Iain how a version says so, as
-Ekorn-Pipeline's v0.x rule does for DBIx-Squirrel, and whether
-Ekorn-Pipeline should require a range. Done when CLAUDE.md and
-MAINTAINING.md's "Making a release" say it.
-
 ## Start roadmap 2026-0001
 
 **From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline

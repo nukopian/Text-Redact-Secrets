@@ -44,8 +44,16 @@ has every decision, settled there.
   have it.
 - **Its contract with Ekorn is `redact` and `find`,** what they take and
   return. A change to either would break Ekorn's `dump_to`, so it's
-  sent to Ekorn-Pipeline as a message before it's made. How versions
-  say so is for Iain to settle before the first release (TODO.md).
+  sent to Ekorn-Pipeline as a message before it's made.
+- **The version says what Ekorn can take,** as Iain decided on
+  2026-11-15. Releases start at v1.0.0. A change to what `redact` or
+  `find` take or return moves the first number, to v2.0.0; new rules,
+  or anything added that breaks nothing, move the middle (D9); a fix
+  moves the last. Ekorn takes `>= v1.0.0, < v2.0.0`, treating a version
+  outside it as it would a failed self-test, so a v2.0.0 comes with a
+  task for Ekorn-Pipeline, which tests it and moves the range. Ekorn's
+  v0.x rule, where the middle number is the breaking one, doesn't fit
+  here, as D9 gives the middle number to new rules.
 - **New rules reach Ekorn's users with no release of Ekorn's,** which is
   why the module has a repository of its own (D1). So a release that
   only brings new rules from gitleaks needs no message.

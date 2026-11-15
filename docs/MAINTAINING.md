@@ -229,8 +229,8 @@ would from `minil release --trial`. PAUSE and MetaCPAN go by the name,
 as Ekorn-Pipeline's trials showed: MetaCPAN lists them as developer
 releases.
 
-The release uses the version of its last trial: v0.1.0 follows
-v0.1.0-TRIAL, as PAUSE takes the two names as different files. It
+The release uses the version of its last trial: v1.0.0 follows
+v1.0.0-TRIAL, as PAUSE takes the two names as different files. It
 never takes the same file name twice, though, so a second trial needs
 a new version. A change to code or tests after a trial moves the
 version on.
@@ -240,11 +240,11 @@ as Iain decided for Ekorn-Pipeline on 2026-11-08, since CPAN Testers
 test code, not prose. Check the POD with `podchecker`, and say in the release's
 commit that it differs from the trial in its documentation.
 
-Don't use an underscore version, such as `v0.3.0_1`, for a trial of
-v0.3.0. `version.pm` reads it as v0.3.1, so it would rank above the
+Don't use an underscore version, such as `v1.1.0_1`, for a trial of
+v1.1.0. `version.pm` reads it as v1.1.1, so it would rank above the
 release it was a trial of.
 
-The commands below are for v0.1.0's trial. For another version, change
+The commands below are for v1.0.0's trial. For another version, change
 the first line of each.
 
 1. **Check `develop`:** CI is green on its last commit, the working
@@ -270,13 +270,13 @@ the first line of each.
    `Build.PL` and `README.md`:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    perlbrew exec --with perl-5.36.3@text-redact-secrets minil prepare "$v" </dev/null
    git status --short
    ```
 
-   Commit what changed as `chore: version v0.1.0, for a trial`, push,
+   Commit what changed as `chore: version v1.0.0, for a trial`, push,
    and wait for CI to pass on the commit before going on. `Changes`
    isn't touched: the trial has no entry of its own.
 
@@ -285,7 +285,7 @@ the first line of each.
    does from its tag:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    perlbrew exec --with perl-5.36.3@text-redact-secrets minil dist --skip-prepare > "$TMPDIR/dist-$v.log" 2>&1
    grep '^Result:' "$TMPDIR/dist-$v.log"
@@ -306,7 +306,7 @@ the first line of each.
    from `~/.pause`:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    mv "Text-Redact-Secrets-$v.tar.gz" "Text-Redact-Secrets-$v-TRIAL.tar.gz"
    perlbrew exec --with perl-5.36.3@text-redact-secrets cpan-upload "Text-Redact-Secrets-$v-TRIAL.tar.gz"
@@ -321,7 +321,7 @@ the first line of each.
    curl -sSf https://fastapi.metacpan.org/v1/release/versions/Text-Redact-Secrets | jq -r '.releases[] | "\(.name) \(.maturity) \(.status) \(.date)"'
    ```
 
-   The first line should be `Text-Redact-Secrets-v0.1.0-TRIAL developer
+   The first line should be `Text-Redact-Secrets-v1.0.0-TRIAL developer
    cpan`, and the last release's should still say `latest`.
 
 6. **Tell Ekorn-Pipeline,** with a message in its `TODO.md`, as
@@ -350,14 +350,18 @@ the first line of each.
 ## Making a release
 
 A release is a version on CPAN, plus a signed, annotated tag on `main`
-with a GitHub release for it. Versions are dotted, as in `v0.1.0`, in
+with a GitHub release for it. Versions are dotted, as in `v1.0.0`, in
 the main module's `$VERSION`, the tag and the tarball's name alike.
 Claude asks before tagging.
 
-Choose the version by what changed since the last release. New rules
-from gitleaks move the middle number, as D9 in roadmap 2026-0001's
-record says; a fix moves the last. How a change to `redact` or `find`
-shows in the version is still to be settled (TODO.md).
+Choose the version by what changed since the last release. Releases
+start at v1.0.0. A change to what `redact` or `find` take or return
+moves the first number, to v2.0.0, and is sent to Ekorn-Pipeline as a
+task before it's released, as its `dump_to` takes only v1.x
+([CLAUDE.md](../CLAUDE.md#text-redact-secrets-and-ekorn-pipeline)).
+New rules from gitleaks, or anything added that breaks nothing, move
+the middle number, as D9 in roadmap 2026-0001's record says; a fix
+moves the last.
 
 Releases don't use `minil release`, which makes its own commit and an
 unsigned tag, and pushes both. `minil prepare` sets the version,
@@ -383,7 +387,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    Set the version on the first line:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    perlbrew exec --with perl-5.36.3@text-redact-secrets minil prepare "$v" </dev/null
    git status --short
@@ -391,7 +395,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
 
 3. **Turn Unreleased into the release** in [Changes](../Changes):
 
-   - Rename the heading to the version and date, as `v0.1.0 2026-11-20`.
+   - Rename the heading to the version and date, as `v1.0.0 2026-11-20`.
    - Start the entry with a sentence that sums it up; it becomes the
      tag's title. Then give the precis of the roadmap items it ships,
      by id.
@@ -403,7 +407,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    ```text
    Unreleased
 
-   v0.1.0 2026-11-20
+   v1.0.0 2026-11-20
 
        Secrets found in text, and redacted, by gitleaks' rules, from
        its v8.30.1.
@@ -411,7 +415,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
        - Requires Perl 5.36 or later.
    ```
 
-   Commit it with the version (`chore: release v0.1.0`), push, and wait
+   Commit it with the version (`chore: release v1.0.0`), push, and wait
    for CI.
 
 4. **Write the tag message from the entry,** and read it. The entry,
@@ -421,7 +425,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    line:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    v=$v perl -0777 -ne 'print "$1\n" =~ s/^    //mgr if /^\Q$ENV{v}\E [^\n]*\n\n(.*?)\n*(?=^\S|\z)/ms' Changes > "$TMPDIR/notes-$v.txt"
    sed "1s/^/$v: /" "$TMPDIR/notes-$v.txt" > "$TMPDIR/tag-$v.txt"
@@ -446,7 +450,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    line:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    git switch main
    git pull --ff-only
    git merge --ff-only develop
@@ -466,7 +470,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    on the first line:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    git switch --detach "$v"
    perlbrew exec --with perl-5.36.3@text-redact-secrets minil dist --skip-prepare > "$TMPDIR/dist-$v.log" 2>&1
@@ -480,7 +484,7 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    passed, upload:
 
    ```sh
-   v=v0.1.0
+   v=v1.0.0
    cd ~/Git/github.com/nukopian/Text-Redact-Secrets
    perlbrew exec --with perl-5.36.3@text-redact-secrets cpan-upload "Text-Redact-Secrets-$v.tar.gz"
    git switch develop
@@ -599,7 +603,7 @@ this list.
   with step 6. Set the version on the first line:
 
   ```sh
-  v=v0.1.0
+  v=v1.0.0
   cd ~/Git/github.com/nukopian/Text-Redact-Secrets
   git switch main
   git merge --ff-only "$v"
