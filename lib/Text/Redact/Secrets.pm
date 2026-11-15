@@ -98,7 +98,29 @@ sub _compile ($rules, $globals) {
     return {
         rules      => \@compiled,
         allowlists => [map { _compile_allowlist($_) } @$globals],
+        _compile_keywords(map { @{ $_->{keywords} // [] } } @compiled),
     };
+}
+
+
+# Return the regex that finds the keywords in a text, and the keywords
+# each found stands for, as D4 says: one regex of every keyword, tried
+# at every place in the text. Two keywords found at one place are a
+# shorter and a longer, the shorter a prefix of the longer, and the
+# regex, trying the longest first, finds only the longer, so each
+# keyword stands for its prefixes too. So the keywords found are those
+# in the text, as gitleaks finds them, overlapping ones too.
+sub _compile_keywords (@keywords) {
+    my %unique  = map  { $_ => 1 } @keywords;
+    my @longest = sort { length $b <=> length $a } sort keys %unique;
+    my %prefixes;
+    for my $keyword (@longest) {
+        $prefixes{$keyword}
+            = [grep { $_ ne $keyword && index($keyword, $_) == 0 } @longest];
+    }
+    return (keywords => undef) unless @longest;
+    my $any = join '|', map { quotemeta } @longest;
+    return (keywords => qr( (?= ($any) ) )x, prefixes => \%prefixes);
 }
 
 
@@ -128,12 +150,17 @@ sub _regex ($source) {
 # is a hash of the rule's id, the secret and its offset, in the order the
 # secrets appear, then the rules' order.
 sub _scan ($text, $compiled) {
-    my $lower = lc $text;
+    my %present;
+    if (my $keywords = $compiled->{keywords}) {
+        my $lower = lc $text;
+        while ($lower =~ m( $keywords )xg) {
+            $present{$_} = 1 for $1, @{ $compiled->{prefixes}{$1} };
+        }
+    }
+
     my @found;
     for my $rule (@{ $compiled->{rules} }) {
-        next
-            if $rule->{keywords} && !any { index($lower, $_) >= 0 }
-            @{ $rule->{keywords} };
+        next if $rule->{keywords} && !any { $present{$_} } @{ $rule->{keywords} };
         push @found, _scan_rule($text, $rule, $compiled->{allowlists});
     }
     # By offset, and those at the same offset in the rules' order.

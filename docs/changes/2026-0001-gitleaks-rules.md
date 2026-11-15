@@ -428,3 +428,17 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   (step 3), and about 6 is `generic-api-key`'s regex, the one rule
   the plain rows let through. Compiling the 218 rules, which the first
   call does, takes about 5 ms.
+- **Keywords found by one regex,** as D4 first had it, after step 5
+  showed looking for each with `index` took as long as the rule it let
+  run. Every keyword, longest first, is tried at every place in the
+  text, and each found stands for its prefixes too: two keywords found
+  at one place are a shorter and a longer, the shorter a prefix of the
+  longer, and the regex finds only the longer. So the keywords found
+  are those gitleaks finds, overlapping ones too: the same rules were
+  chosen in all 556 texts compared, and step 3's comparison with
+  gitleaks is unchanged. Looking for the keywords now takes about 1 ms
+  where it took 6, and a dump of plain rows 10 ms where it took 15, or
+  27 where it took 34 with key-like fields. The regex is built from the
+  rules' keywords at the first call, with the rules, in 8 ms all told,
+  so it follows the rules when they're updated, with nothing to make
+  again.

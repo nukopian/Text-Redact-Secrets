@@ -35,6 +35,21 @@ subtest 'Keywords: a rule runs only if one of its keywords is in the text' =>
         'one, matched whatever its case';
         is found('tok-abc', [{id => 'all', regex => 'tok-\w+'}]),
         [['all', 'tok-abc', 0]], 'a rule with none always runs';
+        is found(
+            'sk-ant-1', [
+                {id => 'short', regex => 'sk-ant', keywords => ['sk']},
+                {id => 'long',  regex => 'ant-1',  keywords => ['sk-ant']},
+            ],
+        ),
+        [['short', 'sk-ant', 0], ['long', 'ant-1', 3]],
+        'one that starts where a longer one does';
+        is found(
+            'abcd', [
+                {id => 'left',  regex => 'ab', keywords => ['abc']},
+                {id => 'right', regex => 'cd', keywords => ['bcd']},
+            ],
+        ),
+        [['left', 'ab', 0], ['right', 'cd', 2]], 'and two that overlap';
     };
 
 subtest 'The secret: as gitleaks picks it out of the match (D8)' => sub {
