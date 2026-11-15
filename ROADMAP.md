@@ -42,14 +42,7 @@ dropped is deleted, and the commit that drops it names its id.
 
 ## Now
 
-### 2026-0001. A module of gitleaks' rules
-
-**Size:** L (5). **Moved from:** Ekorn-Pipeline 2026-0037.
-
-Text::Redact::Secrets, released to CPAN, with `redact` and `find`, by
-gitleaks' rules, which `scripts/update-rules` makes into a module from
-a gitleaks release tag. Started on 2026-11-15; [its
-record](docs/changes/2026-0001-gitleaks-rules.md) has the plan.
+Nothing yet.
 
 ## Next
 

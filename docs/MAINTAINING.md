@@ -11,9 +11,8 @@ It's kept the same way as
 where it was designed, and this guide began as a copy of Ekorn's.
 Minilla builds the distribution, and a release goes to CPAN.
 
-Until v1.0.0 is released, `main` doesn't exist, and `develop` is the
-default branch; making and protecting `main` is the last task in
-`TODO.md`.
+`main` was made, and made the default branch, at v1.0.2, the first
+release.
 
 The working copy is `~/Git/github.com/nukopian/Text-Redact-Secrets`. Perl
 commands run in the project's perlbrew library, named on each command

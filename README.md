@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/nukopian/Text-Redact-Secrets/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/nukopian/Text-Redact-Secrets/actions?workflow=test)
+[![Actions Status](https://github.com/nukopian/Text-Redact-Secrets/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/nukopian/Text-Redact-Secrets/actions?workflow=test)
 [![CPAN](https://img.shields.io/cpan/v/Text-Redact-Secrets)](https://metacpan.org/release/Text-Redact-Secrets) [![Kwalitee](https://cpants.cpanauthors.org/dist/Text-Redact-Secrets.svg)](https://cpants.cpanauthors.org/dist/Text-Redact-Secrets)
 
 # Text-Redact-Secrets

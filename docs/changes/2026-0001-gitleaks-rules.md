@@ -1,6 +1,6 @@
 # 2026-0001. A module of gitleaks' rules
 
-**Status:** in progress
+**Status:** shipped in v1.0.2
 
 **Decisions:** D1 settled: a distribution and repository of its own. D2
 settled: released to CPAN. D3 settled: `/a`, `$` as `\z`, refuse what
@@ -26,6 +26,8 @@ repository's items; its 2026-0038 makes its `dump_to` redact with this
 module.
 
 **Started:** 2026-11-15, in 7a0ae0656a5eecbddc9d48a6e337aaa3068aefa9
+
+**Finished:** 2026-11-15
 
 ## Background
 
@@ -554,3 +556,22 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   were each looked for in turn, in each secret; now one regex finds any
   of them. 300 passwords take 13 ms, 600 take 26, and the same 554
   texts find what they did.
+- **Step 9, the release,** as v1.0.2. Three trials went to CPAN, as
+  each change to code after one needed a new version: v1.0.0-TRIAL;
+  v1.0.1-TRIAL, after the wash-up; and v1.0.2-TRIAL, after
+  Ekorn-Pipeline, trying v1.0.1, found the cost of each secret found.
+  CPAN Testers passed each on every Perl from 5.36 it was tested on,
+  v1.0.0-TRIAL on 13 systems, and v1.0.2-TRIAL, by the release, on
+  Linux and FreeBSD, and graded each NA on the Perls before 5.36,
+  which it doesn't support; none failed. Iain released before more
+  systems' reports on v1.0.2 came in, as its changes since v1.0.0 were
+  Perl alone, and CI had passed them on Linux, macOS and Windows. `main` was made from `develop` at the
+  release, made the default branch, and protected, and Ekorn-Pipeline
+  given a task, as its 2026-0038 waited on it.
+- **Outcome,** against Done when: Text::Redact::Secrets is on CPAN, as
+  v1.0.2, its rules made by `scripts/update-rules` from gitleaks
+  v8.30.1, beside one of its own (D12). Its tests by hand and gitleaks'
+  false positives pass on every Perl CI covers, from 5.36 to 5.44, on
+  Linux, macOS and Windows, and under `prove`; coverage is at its
+  floors; the cost of keywords first is measured (step 5); and
+  Ekorn-Pipeline is told, in its `TODO.md`.
