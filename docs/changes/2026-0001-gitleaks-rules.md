@@ -412,3 +412,19 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
     look random, which the test says.
   - **An AWS secret access key** is found by `generic-api-key`, not a
     rule of AWS's own.
+- **Step 5, keywords first, measured** (D4), on an Apple M2, with
+  Benchmark, by a script kept out of the repository, as only its
+  numbers matter: `redact` on two Data::Dumper dumps of 300 rows each,
+  with every rule's keywords checked first, as the module does, and
+  with them removed, so that every rule runs. Both redacted the same
+  text, and 5.36.3 and 5.44.0 took the same time, within 5%.
+
+  | Dump | Size | Rules run | Keywords first | Every rule | |
+  |---|---|---|---|---|---|
+  | Plain rows: id, name, email, a password in every 50th | 32,316 characters | 1 of 218 | 15 ms | 851 ms | 57 times as fast |
+  | Rows with fields like `api_key` and `auth_token` | 59,424 characters | 2 of 218 | 34 ms | 570 ms | 17 times as fast |
+
+  Of the 15 ms, about 6 is the keywords looked for, each with `index`
+  (step 3), and about 6 is `generic-api-key`'s regex, the one rule
+  the plain rows let through. Compiling the 218 rules, which the first
+  call does, takes about 5 ms.
