@@ -460,3 +460,15 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   `main`'s required checks, as it fails when gitleaks releases, not
   when the code is broken. GitHub runs it only on the default branch,
   and stops after 60 days with no activity in the repository.
+- **Step 8, the docs.** D6's credit: the generated
+  `Rules/Gitleaks.pm`'s POD names gitleaks, the tag and the commit,
+  and is made again with each update, so it's never out of date; the
+  main module's POD names gitleaks, its copyright and licence, and
+  points to it. The commit is split in the POD by `Z<>`, which shows
+  nothing, as a 40-digit hash looks like a secret to gitleaks in a
+  file holding one of its rules' keywords. `LICENSE`, the POD and the README say gitleaks'
+  rules are under its MIT licence, and the distribution's own under
+  Perl's terms; `Changes` has the release's precis. Writing the new POD
+  showed the script's "rules unchanged" check passed over a change to
+  how the script writes the module, as it compared two modules both
+  written the new way; it now compares the module as it is.

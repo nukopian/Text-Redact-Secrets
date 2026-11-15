@@ -352,6 +352,11 @@ and allowlists, carried over from gitleaks unchanged. C<redact> puts
 C<*REDACTED*> in place of each, and C<find> reports each, with the rule
 that found it.
 
+gitleaks' rules are in L<Text::Redact::Secrets::Rules::Gitleaks>, which
+names the gitleaks tag and commit they came from. gitleaks is
+L<https://github.com/gitleaks/gitleaks>, copyright (c) 2019 Zachary
+Rice, under the MIT licence.
+
 Beside gitleaks' rules are some of the module's own, for secrets
 gitleaks has no rule for, such as a password in a URL, in
 L<Text::Redact::Secrets::Rules::Dist>, which says what each finds.
@@ -424,7 +429,7 @@ Copyright (c) 2026 by Iain Campbell.
 
 This is free software; you can redistribute it and/or modify it under the
 same terms as the Perl 5 programming language system itself, except for
-its rules, which are gitleaks', under the MIT licence in
-F<LICENSE-gitleaks>.
+gitleaks' rules, in L<Text::Redact::Secrets::Rules::Gitleaks>, which
+are under gitleaks' MIT licence, in F<LICENSE-gitleaks>.
 
 =cut

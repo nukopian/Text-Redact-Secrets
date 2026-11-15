@@ -46,13 +46,13 @@ It needs Perl 5.36 or later, and nothing beyond its core modules.
 
 Copyright (c) 2026 by Iain Campbell. This is free software; you can
 redistribute it and/or modify it under the same terms as the Perl 5
-programming language system itself, except for its rules, which are
-gitleaks', under the MIT licence in `LICENSE-gitleaks`. See the file
+programming language system itself, except for gitleaks' rules, which
+are under gitleaks' MIT licence, in `LICENSE-gitleaks`. See the file
 `LICENSE`.
 
 ## Acknowledgements
 
 Designed and created by Iain Campbell, in collaboration with Claude,
 Anthropic's AI model. The rules for finding secrets are gitleaks', by
-Zachary Rice and its contributors, but for the module's own,
-which are Iain's and Claude's.
+Zachary Rice and its contributors, but for the module's own, which
+are Iain's and Claude's.
