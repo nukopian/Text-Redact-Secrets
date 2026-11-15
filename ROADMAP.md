@@ -4,7 +4,7 @@ What Text-Redact-Secrets means to do, and why. [Changes](Changes)
 says what each release did, and the [README](README.md) what it is
 now.
 
-Last id: 2026-0005.
+Last id: 2026-0006.
 
 Items come in four groups:
 
@@ -76,7 +76,19 @@ says how to release from it.
 
 ## Later
 
-Nothing yet.
+### 2026-0006. Every rule in time in step with the text
+
+**Size:** M (3). **Depends on:** 2026-0001.
+
+gitleaks runs its rules in Go's RE2, which takes time in step with
+the text, whatever it is. Perl's engine backtracks, and a few of
+gitleaks' rules take longer on long text made to be awkward:
+`privateai-api-token` four times as long each time it doubles, even
+after D13 of 2026-0001's record. Ways to weigh: running a rule only
+near its keywords, where its regex must find one within so many
+characters of where a match starts; or RE2 itself, by
+re::engine::RE2, when it's installed, which would also run each regex
+exactly as gitleaks does, but is a compiled module, not core Perl.
 
 ## Ideas
 
