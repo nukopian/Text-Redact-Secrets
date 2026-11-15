@@ -450,3 +450,13 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   `Rules/Gitleaks.pm`, and the distribution's own from `OwnRules.pm`
   to `Rules/Dist.pm`. `scripts/update-rules` writes the new name, and
   made it again, the same but for its package.
+- **Step 6, the coverage floors,** needed no change: those copied from
+  Ekorn-Pipeline, 100% of statements, branches, subs and POD and 95%
+  of conditions, have been met at 100% since step 1.
+- **Step 7, the weekly job,** `.github/workflows/gitleaks-tag.yml`:
+  every Monday, and by hand, it reads the tag in `Rules/Gitleaks.pm`
+  with the runner's Perl, asks GitHub for gitleaks' latest release,
+  and fails, saying what to run, when they differ. It isn't one of
+  `main`'s required checks, as it fails when gitleaks releases, not
+  when the code is broken. GitHub runs it only on the default branch,
+  and stops after 60 days with no activity in the repository.

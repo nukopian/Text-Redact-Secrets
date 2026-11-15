@@ -1,7 +1,7 @@
 name: test
 
-# Copied from Ekorn-Pipeline's, less what only it needed. Until there's a
-# module in lib/ and tests in t/, the perl, style and coverage jobs fail.
+# Copied from Ekorn-Pipeline's, less what only it needed. gitleaks-tag.yml
+# checks weekly for a newer gitleaks release.
 
 on:
   push:

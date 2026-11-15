@@ -1,0 +1,45 @@
+name: gitleaks tag
+
+# Fails when gitleaks has released a tag newer than the one the module's
+# rules came from, so that it's noticed, as roadmap 2026-0001's D9 says
+# Iain chose. Fix it as docs/MAINTAINING.md's "Updating the rules" says:
+# run scripts/update-rules with the new tag. A failure here isn't a
+# broken build; the module works as it is, with the rules it has.
+#
+# GitHub runs a scheduled workflow only on the default branch, and stops
+# after 60 days with no activity in the repository; a commit, or running
+# it by hand, starts it again.
+
+on:
+  schedule:
+    # Mondays at 06:17 UTC: not on the hour, when GitHub's queue is
+    # longest.
+    - cron: "17 6 * * 1"
+  # By hand:
+  # gh workflow run gitleaks-tag.yml --ref develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Actions are pinned to a commit, as a tag can be moved to other code;
+# the comment beside each says which release it is.
+
+jobs:
+  latest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The runner's Perl reads the tag from the module, which needs only
+      # core Perl, so nothing is installed.
+      - name: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ours=$(perl -Ilib -MText::Redact::Secrets::Rules::Gitleaks -e 'print Text::Redact::Secrets::Rules::Gitleaks::gitleaks_tag()')
+          latest=$(gh api repos/gitleaks/gitleaks/releases/latest --jq .tag_name)
+          echo "The rules came from gitleaks $ours; its latest release is $latest."
+          if [ "$ours" != "$latest" ]; then
+            echo "::error title=New gitleaks release::gitleaks $latest is out; the rules came from $ours. Run scripts/update-rules $latest, as docs/MAINTAINING.md says."
+            exit 1
+          fi
