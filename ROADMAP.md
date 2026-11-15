@@ -4,7 +4,7 @@ What Text-Redact-Secrets means to do, and why. [Changes](Changes)
 says what each release did, and the [README](README.md) what it is
 now.
 
-Last id: 2026-0006.
+Last id: 2026-0007.
 
 Items come in four groups:
 
@@ -126,3 +126,16 @@ waits on the maintainer at all. Against it: reading TOML at run time
 needs a dependency beyond core Perl, and the rules used would no
 longer be a set tested together, which Ekorn-Pipeline's `dump_to`
 relies on. Kept in case someone asks for it.
+
+### 2026-0007. Scan this repository with betterleaks
+
+**Added:** 2026-11-15. **Size:** S (2).
+
+CI's scan of the whole history, and the scans by hand before a push and
+a tag, use gitleaks, which adds no more rules; betterleaks, its
+successor, does. Scanning with it instead, as Ekorn-Pipeline's idea
+2026-0039 has it for all of Iain's repositories, once it's settled
+there. Two things to settle: whether betterleaks reads
+`.gitleaksignore`, which D14 of 2026-0001's record relies on, and
+installing it, which is Iain's to say. It may be settled with
+2026-0003, rules from betterleaks.
