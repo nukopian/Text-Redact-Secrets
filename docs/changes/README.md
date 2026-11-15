@@ -81,4 +81,4 @@ Steps, Done when.
 Newest id first.
 
 - [A module of gitleaks' rules](2026-0001-gitleaks-rules.md), roadmap
-  2026-0001: open, moved from Ekorn-Pipeline 2026-0037.
+  2026-0001: in progress, moved from Ekorn-Pipeline 2026-0037.

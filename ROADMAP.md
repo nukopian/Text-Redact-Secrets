@@ -42,30 +42,18 @@ dropped is deleted, and the commit that drops it names its id.
 
 ## Now
 
-Nothing yet.
+### 2026-0001. A module of gitleaks' rules
+
+**Size:** L (5). **Moved from:** Ekorn-Pipeline 2026-0037.
+
+Text::Redact::Secrets, released to CPAN, with `redact` and `find`, by
+gitleaks' rules, which `scripts/update-rules` makes into a module from
+a gitleaks release tag. Started on 2026-11-15; [its
+record](docs/changes/2026-0001-gitleaks-rules.md) has the plan.
 
 ## Next
 
-### 2026-0001. A module of gitleaks' rules
-
-**Size:** M (3). **Moved from:** Ekorn-Pipeline 2026-0037.
-
-Text::Redact::Secrets, released to CPAN, with `redact` and `find` to
-replace or report each secret in a string, by gitleaks' rules. A
-script, `scripts/update-rules`, makes its module of rules from a
-gitleaks release tag's `config/gitleaks.toml`, so keeping up with
-gitleaks is running it again. Ekorn-Pipeline's `dump_to` will redact
-with it (Ekorn-Pipeline 2026-0038), and it's of use to anyone writing
-text that might hold a secret. Every question is settled in its
-[record](docs/changes/2026-0001-gitleaks-rules.md), designed in
-Ekorn-Pipeline's session before the module had a repository of its
-own.
-
-**Done when:** Text::Redact::Secrets is on CPAN, its rules made by the
-script from a gitleaks tag, its tests by hand and gitleaks' false
-positives passing, and the cost of checking keywords first measured in
-the record; and Ekorn-Pipeline is told, in its `TODO.md`, that the
-release is out.
+Nothing yet.
 
 ## Later
 

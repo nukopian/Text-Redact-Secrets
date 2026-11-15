@@ -3,29 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## Start roadmap 2026-0001
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** the tasks above
-
-Every decision in its record is settled. Move it to Now, and write The
-plan in its record, as CLAUDE.md's Change records say: What, Why,
-Steps, Done when, from the roadmap's entry. Its first steps include
-`lib/Text/Redact/Secrets.pm`, `README.pod`, and a first `minil build`
-to make `Build.PL`, `META.json` and `README.md`; and setting the
-coverage floors in `scripts/coverage` once there's code to measure,
-as they're copied from Ekorn-Pipeline's. Its steps include the
-weekly CI job that fails when the module's gitleaks tag isn't
-gitleaks' latest, as Iain chose for D9 on 2026-11-15. Until there's a
-module and tests, CI's perl, style and coverage jobs fail. The first
-test with a made-up AWS key, built from pieces as CLAUDE.md's Tests
-say, shows the rule works by passing CI's `secrets` job.
-`scripts/update-rules` reads the rules with TOML::Parser and fetches
-them with HTTP::Tiny, as Iain chose on 2026-11-15, passing
-`verify_SSL => 1`, as 5.36's HTTP::Tiny doesn't verify certificates
-by default. Done when the item is in Now and its record has its plan.
-
 ## Make and protect `main`, at the first release
 
 **From:** Text-Redact-Secrets' session, 2026-11-15 (Text-Redact-Secrets
