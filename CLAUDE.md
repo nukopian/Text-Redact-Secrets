@@ -22,12 +22,19 @@ be safe to write. Text::Redact::Secrets puts `*REDACTED*` in place of
 each secret it finds in a string, with `redact`, or reports each, with
 `find`, by gitleaks' rules: a maintained set of regexes, keywords,
 entropies and allowlists, carried over from gitleaks by a script, so
-that this module is as good at finding secrets as gitleaks is, and no
-better or worse.
+that this module is as good at finding secrets as gitleaks is. Beside
+them are rules of its own, written by hand in
+`lib/Text/Redact/Secrets/OwnRules.pm`, for secrets gitleaks has no rule
+for, such as a password in a URL.
 
-The test of any change: does it keep the rules gitleaks', and keep the
-module safe to call on any text? A rule that should find more is fixed
-in gitleaks, for everyone, and comes here with its next release.
+The test of any change: does it keep gitleaks' rules as gitleaks has
+them, and keep the module safe to call on any text? gitleaks adds no
+more rules: its maintainer said so in 2026, closing its issue 2089. So
+a secret it has no rule for gets a rule of the module's own, as Iain
+decided on 2026-11-15 (2026-0001's D12): written as gitleaks writes
+its rules, run as they are, after them, with an id that isn't one of
+gitleaks', tested by hand, and named in OwnRules' POD. gitleaks' own
+rules are never changed here.
 
 ## Text-Redact-Secrets and Ekorn-Pipeline
 

@@ -4,8 +4,10 @@ use Test2::Plugin::NoWarnings;
 
 # The module of rules, as scripts/update-rules writes it: where its rules
 # came from, and that each is whole and compiles as the module compiles
-# it. What each finds is tested with the scan.
+# it; and the module's own rules, beside them. What each finds is tested
+# with the scan.
 
+use Text::Redact::Secrets::OwnRules;
 use Text::Redact::Secrets::Rules;
 
 my $rules   = Text::Redact::Secrets::Rules::rules();
@@ -49,6 +51,14 @@ subtest 'The global allowlists' => sub {
             'each has regexes or stopwords';
         ok compiles($_), "its regex compiles: $_"
             for @{ $allowlist->{regexes} // [] };
+    }
+};
+
+subtest "The module's own rules" => sub {
+    my %gitleaks = map { $_->{id} => 1 } @$rules;
+    for my $rule (@{ Text::Redact::Secrets::OwnRules::rules() }) {
+        ok !$gitleaks{$rule->{id}},  "$rule->{id} isn't one of gitleaks' ids";
+        ok compiles($rule->{regex}), "$rule->{id}'s regex compiles";
     }
 };
 

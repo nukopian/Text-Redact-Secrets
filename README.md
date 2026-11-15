@@ -10,7 +10,9 @@ be safe to write. Text::Redact::Secrets puts `*REDACTED*` in place of
 each secret it finds in a string, with `redact`, or reports each, with
 `find`, by the rules of [gitleaks](https://github.com/gitleaks/gitleaks):
 a maintained set of regexes, keywords, entropies and allowlists,
-carried over from gitleaks unchanged.
+carried over from gitleaks unchanged. Beside them are rules of its
+own, for secrets gitleaks has no rule for, such as a password in a
+URL like `postgres://user:password@host/db`.
 
 ```perl
 use Text::Redact::Secrets qw(find redact);
@@ -52,4 +54,5 @@ gitleaks', under the MIT licence in `LICENSE-gitleaks`. See the file
 
 Designed and created by Iain Campbell, in collaboration with Claude,
 Anthropic's AI model. The rules for finding secrets are gitleaks', by
-Zachary Rice and its contributors.
+Zachary Rice and its contributors, but for the module's own,
+which are Iain's and Claude's.

@@ -7,6 +7,7 @@ use Exporter   qw(import);
 use List::Util qw(all any);
 use POSIX      qw(log2);
 
+use Text::Redact::Secrets::OwnRules;
 use Text::Redact::Secrets::Rules;
 
 our $VERSION = 'v1.0.0';
@@ -66,11 +67,14 @@ sub _check_string ($string, $verb) {
 }
 
 
-# Return gitleaks' rules and global allowlists, compiled the first time
-# they're wanted.
+# Return gitleaks' rules, then the module's own, and gitleaks' global
+# allowlists, compiled the first time they're wanted.
 sub _rules () {
     state $rules = _compile(
-        Text::Redact::Secrets::Rules::rules(),
+        [
+            @{ Text::Redact::Secrets::Rules::rules() },
+            @{ Text::Redact::Secrets::OwnRules::rules() },
+        ],
         Text::Redact::Secrets::Rules::global_allowlists(),
     );
     return $rules;
@@ -320,6 +324,10 @@ and allowlists, carried over from gitleaks unchanged. C<redact> puts
 C<*REDACTED*> in place of each, and C<find> reports each, with the rule
 that found it.
 
+Beside gitleaks' rules are some of the module's own, for secrets
+gitleaks has no rule for, such as a password in a URL, in
+L<Text::Redact::Secrets::OwnRules>, which says what each finds.
+
 Nothing is exported unless asked for.
 
 =head1 FUNCTIONS
@@ -376,7 +384,7 @@ C<find> was given C<undef> or a reference.
 =head1 SEE ALSO
 
 L<gitleaks|https://github.com/gitleaks/gitleaks>, whose rules these
-are.
+are, and L<Text::Redact::Secrets::OwnRules>, the module's own.
 
 =head1 AUTHOR
 

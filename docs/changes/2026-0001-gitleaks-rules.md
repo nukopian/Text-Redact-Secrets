@@ -10,7 +10,8 @@ gitleaks' licence shipped, and named in the POD. D7 settled: what
 applies to strings carried, what applies to files not. D8 settled: the
 secret as gitleaks picks it out. D9 settled: rules pinned to a gitleaks
 tag. D10 settled: `redact` and `find`. D11 settled:
-`Text::Redact::Secrets`. None open.
+`Text::Redact::Secrets`. D12 settled: rules of its own, beside
+gitleaks', for what gitleaks has none for. None open.
 
 **Origin:** Ekorn-Pipeline 2026-0037, added to its roadmap on
 2026-11-15, split from its 2026-0036, and designed there; moved here
@@ -218,6 +219,23 @@ escaped, mostly in the end of a secret that most rules share,
   does, and doesn't suggest it's gitleaks' own. On MetaCPAN that day,
   neither it, nor `Text::Redact`, nor the distribution was taken.
   Split from D1 the same day, when D1 was settled.
+- [x] **D12.** A secret gitleaks has no rule for, such as a password in
+  a URL's user information, `postgres://user:password@host/db`? **A
+  rule of the module's own, beside gitleaks',** Iain decided on
+  2026-11-15, as recommended, when step 4's tests showed gitleaks has
+  none for it, and won't: its maintainer closed its issue 2089, asking
+  for this rule, in April 2026, saying no more rules would be added,
+  and pointing to betterleaks as the next gitleaks (roadmap 2026-0003,
+  an idea). The promise that the rules are gitleaks', no better or
+  worse, could only be kept by leaving a dump's connection URLs
+  unredacted. So `lib/Text/Redact/Secrets/OwnRules.pm`, written by
+  hand, gives rules as `Rules.pm` gives gitleaks', run as they are,
+  after them, with gitleaks' global allowlists, each with an id that
+  isn't one of gitleaks', tested by hand, and named in its POD.
+  gitleaks' own rules are still never changed. Its first,
+  `url-userinfo-password`, finds the password, whatever the scheme,
+  with no minimum entropy, as in a URL even a short one is one.
+  Raised during the work, so settled after it started.
 
 ## The plan
 
@@ -373,3 +391,24 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
     secrets. `find` and `redact` pass gitleaks' rules, compiled the
     first time they're wanted, each regex with `/a` and the `regexp`
     warning quiet, as Iain decided in step 2.
+- **Step 4, the tests by hand,** in `t/04-by-hand.t`: 21 cases, and a
+  dump redacted. 18 find what the gitleaks binary finds in the same
+  text, checked when they were written; three find a password in a
+  URL, by the module's own rule (D12), where gitleaks finds nothing.
+  With that rule, the 554 texts of step 3 find all gitleaks finds, and
+  59 passwords more, `deadbeef` and `d3adb33f`, in the URLs of
+  gitleaks' Sidekiq rule's samples. What the tests show beyond the
+  plan:
+  - **A password in a URL's user information,** as in
+    `postgres://app:...@db/app`, isn't found by gitleaks, which has no
+    rule for it, and won't add one, so the module has a rule of its own
+    for it, `url-userinfo-password` (D12). One in a DSN's or a URL's
+    query, as `password=...`, is found by `generic-api-key`, if it looks
+    random enough.
+  - **`generic-api-key` passes over a value with a word in it,** by
+    its 1,446 stopwords, such as "fake", "example", "real" and
+    "password", and the global allowlist over one holding
+    `abcdefghijklmnopqrstuvwxyz`, so the made-up values it's to find
+    look random, which the test says.
+  - **An AWS secret access key** is found by `generic-api-key`, not a
+    rule of AWS's own.
