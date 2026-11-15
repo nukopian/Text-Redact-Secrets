@@ -7,11 +7,11 @@ use Test2::Plugin::NoWarnings;
 # it; and the module's own rules, beside them. What each finds is tested
 # with the scan.
 
-use Text::Redact::Secrets::OwnRules;
-use Text::Redact::Secrets::Rules;
+use Text::Redact::Secrets::Rules::Dist;
+use Text::Redact::Secrets::Rules::Gitleaks;
 
-my $rules   = Text::Redact::Secrets::Rules::rules();
-my $globals = Text::Redact::Secrets::Rules::global_allowlists();
+my $rules   = Text::Redact::Secrets::Rules::Gitleaks::rules();
+my $globals = Text::Redact::Secrets::Rules::Gitleaks::global_allowlists();
 
 # Each regex, compiled as the module compiles it: with /a, and quiet
 # about a literal {, which Go's RE2 reads as Perl does, but which Perl
@@ -22,9 +22,9 @@ sub compiles ($regex) {
 }
 
 subtest 'Where the rules came from' => sub {
-    like Text::Redact::Secrets::Rules::gitleaks_tag(),
+    like Text::Redact::Secrets::Rules::Gitleaks::gitleaks_tag(),
         qr( \A v \d+ \. \d+ \. \d+ \z )x, 'a gitleaks tag';
-    like Text::Redact::Secrets::Rules::gitleaks_commit(),
+    like Text::Redact::Secrets::Rules::Gitleaks::gitleaks_commit(),
         qr( \A [0-9a-f]{40} \z )x, 'a full commit hash';
 };
 
@@ -56,7 +56,7 @@ subtest 'The global allowlists' => sub {
 
 subtest "The module's own rules" => sub {
     my %gitleaks = map { $_->{id} => 1 } @$rules;
-    for my $rule (@{ Text::Redact::Secrets::OwnRules::rules() }) {
+    for my $rule (@{ Text::Redact::Secrets::Rules::Dist::rules() }) {
         ok !$gitleaks{$rule->{id}},  "$rule->{id} isn't one of gitleaks' ids";
         ok compiles($rule->{regex}), "$rule->{id}'s regex compiles";
     }

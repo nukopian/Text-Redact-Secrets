@@ -7,8 +7,8 @@ use Exporter   qw(import);
 use List::Util qw(all any);
 use POSIX      qw(log2);
 
-use Text::Redact::Secrets::OwnRules;
-use Text::Redact::Secrets::Rules;
+use Text::Redact::Secrets::Rules::Dist;
+use Text::Redact::Secrets::Rules::Gitleaks;
 
 our $VERSION = 'v1.0.0';
 
@@ -72,18 +72,19 @@ sub _check_string ($string, $verb) {
 sub _rules () {
     state $rules = _compile(
         [
-            @{ Text::Redact::Secrets::Rules::rules() },
-            @{ Text::Redact::Secrets::OwnRules::rules() },
+            @{ Text::Redact::Secrets::Rules::Gitleaks::rules() },
+            @{ Text::Redact::Secrets::Rules::Dist::rules() },
         ],
-        Text::Redact::Secrets::Rules::global_allowlists(),
+        Text::Redact::Secrets::Rules::Gitleaks::global_allowlists(),
     );
     return $rules;
 }
 
 
-# Return rules and global allowlists, as Text::Redact::Secrets::Rules
-# gives them, compiled for _scan: each regex with /a, keywords and
-# stopwords lowercased, as gitleaks does when it loads them.
+# Return rules and global allowlists, as
+# Text::Redact::Secrets::Rules::Gitleaks gives them, compiled for _scan:
+# each regex with /a, keywords and stopwords lowercased, as gitleaks does
+# when it loads them.
 sub _compile ($rules, $globals) {
     my @compiled = map {
         +{
@@ -353,7 +354,7 @@ that found it.
 
 Beside gitleaks' rules are some of the module's own, for secrets
 gitleaks has no rule for, such as a password in a URL, in
-L<Text::Redact::Secrets::OwnRules>, which says what each finds.
+L<Text::Redact::Secrets::Rules::Dist>, which says what each finds.
 
 Nothing is exported unless asked for.
 
@@ -411,7 +412,7 @@ C<find> was given C<undef> or a reference.
 =head1 SEE ALSO
 
 L<gitleaks|https://github.com/gitleaks/gitleaks>, whose rules these
-are, and L<Text::Redact::Secrets::OwnRules>, the module's own.
+are, and L<Text::Redact::Secrets::Rules::Dist>, the module's own.
 
 =head1 AUTHOR
 

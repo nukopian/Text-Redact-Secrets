@@ -6,7 +6,7 @@
 # pieces, so that no line holds it.
 use v5.36;
 
-package Text::Redact::Secrets::Rules;
+package Text::Redact::Secrets::Rules::Gitleaks;
 
 # The gitleaks tag the rules came from.
 sub gitleaks_tag () {
@@ -3417,7 +3417,7 @@ __END__
 
 =head1 NAME
 
-Text::Redact::Secrets::Rules - gitleaks' rules, for Text::Redact::Secrets
+Text::Redact::Secrets::Rules::Gitleaks - gitleaks' rules, for Text::Redact::Secrets
 
 =head1 DESCRIPTION
 

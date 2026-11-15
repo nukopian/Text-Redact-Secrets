@@ -1,13 +1,14 @@
 use v5.36;
 
-package Text::Redact::Secrets::OwnRules;
+package Text::Redact::Secrets::Rules::Dist;
 
-# Rules of Text::Redact::Secrets' own, for secrets gitleaks has no rule
-# for, written by hand, as roadmap 2026-0001's D12 says. Each is given as
-# Text::Redact::Secrets::Rules gives gitleaks', and run as they are, after
-# them, with gitleaks' global allowlists.
+# Rules of the distribution's own, for secrets gitleaks has no rule for,
+# written by hand, as roadmap 2026-0001's D12 says. Each is given as
+# Text::Redact::Secrets::Rules::Gitleaks gives gitleaks', and run as they
+# are, after them, with gitleaks' global allowlists.
 
-# The rules, each a hash as Text::Redact::Secrets::Rules gives them.
+# The rules, each a hash as Text::Redact::Secrets::Rules::Gitleaks gives
+# them.
 sub rules () {
     return [{
 
@@ -29,7 +30,7 @@ __END__
 
 =head1 NAME
 
-Text::Redact::Secrets::OwnRules - rules of Text::Redact::Secrets' own
+Text::Redact::Secrets::Rules::Dist - rules of Text::Redact::Secrets' own
 
 =head1 DESCRIPTION
 
@@ -55,7 +56,7 @@ added, in L<its issue 2089|https://github.com/gitleaks/gitleaks/issues/2089>.
 
 A reference to a list of the rules, each a hash of its C<id>, its
 C<regex>, and its C<keywords>, as
-L<Text::Redact::Secrets::Rules/rules> gives gitleaks'.
+L<Text::Redact::Secrets::Rules::Gitleaks/rules> gives gitleaks'.
 
 =head1 LICENSE
 

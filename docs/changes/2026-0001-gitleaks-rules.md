@@ -228,8 +228,10 @@ escaped, mostly in the end of a secret that most rules share,
   and pointing to betterleaks as the next gitleaks (roadmap 2026-0003,
   an idea). The promise that the rules are gitleaks', no better or
   worse, could only be kept by leaving a dump's connection URLs
-  unredacted. So `lib/Text/Redact/Secrets/OwnRules.pm`, written by
-  hand, gives rules as `Rules.pm` gives gitleaks', run as they are,
+  unredacted. So `lib/Text/Redact/Secrets/Rules/Dist.pm`, written by
+  hand, gives rules as `Rules/Gitleaks.pm` gives gitleaks' (each first
+  named `OwnRules.pm` and `Rules.pm`, until Iain gave each source of
+  rules a module under `Rules/` the same day), run as they are,
   after them, with gitleaks' global allowlists, each with an id that
   isn't one of gitleaks', tested by hand, and named in its POD.
   gitleaks' own rules are still never changed. Its first,
@@ -442,3 +444,9 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   rules' keywords at the first call, with the rules, in 8 ms all told,
   so it follows the rules when they're updated, with nothing to make
   again.
+- **The rules' modules moved under `Rules/`,** as Iain asked, so that
+  each source of rules has a module of its own, with room for
+  betterleaks' (2026-0003): gitleaks', generated, from `Rules.pm` to
+  `Rules/Gitleaks.pm`, and the distribution's own from `OwnRules.pm`
+  to `Rules/Dist.pm`. `scripts/update-rules` writes the new name, and
+  made it again, the same but for its package.

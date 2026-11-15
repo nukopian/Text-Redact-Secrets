@@ -24,8 +24,10 @@ each secret it finds in a string, with `redact`, or reports each, with
 entropies and allowlists, carried over from gitleaks by a script, so
 that this module is as good at finding secrets as gitleaks is. Beside
 them are rules of its own, written by hand in
-`lib/Text/Redact/Secrets/OwnRules.pm`, for secrets gitleaks has no rule
-for, such as a password in a URL.
+`lib/Text/Redact/Secrets/Rules/Dist.pm`, for secrets gitleaks has no
+rule for, such as a password in a URL. Each source of rules has a
+module of its own under `Rules/`: `Gitleaks.pm`, generated, and
+`Dist.pm`, the distribution's own.
 
 The test of any change: does it keep gitleaks' rules as gitleaks has
 them, and keep the module safe to call on any text? gitleaks adds no
@@ -33,8 +35,8 @@ more rules: its maintainer said so in 2026, closing its issue 2089. So
 a secret it has no rule for gets a rule of the module's own, as Iain
 decided on 2026-11-15 (2026-0001's D12): written as gitleaks writes
 its rules, run as they are, after them, with an id that isn't one of
-gitleaks', tested by hand, and named in OwnRules' POD. gitleaks' own
-rules are never changed here.
+gitleaks', tested by hand, and named in `Rules/Dist.pm`'s POD.
+gitleaks' own rules are never changed here.
 
 ## Text-Redact-Secrets and Ekorn-Pipeline
 
@@ -144,11 +146,12 @@ what was Iain's, and what was gitleaks'.
     use it: `minil prepare VERSION` sets the version, we commit, move
     `main` and sign the tag, `minil dist --skip-prepare` builds the
     tarball, and `cpan-upload` uploads it.
-- **The module of rules is generated, never edited by hand.**
-  `scripts/update-rules` writes it from a gitleaks release tag, as D9
-  says, with the tag and commit in it; a change to how a rule is
-  carried over is a change to the script, and the module is made
-  again. The script and what it fetches stay out of the tarball.
+- **The module of gitleaks' rules, `Rules/Gitleaks.pm`, is generated,
+  never edited by hand.** `scripts/update-rules` writes it from a
+  gitleaks release tag, as D9 says, with the tag and commit in it; a
+  change to how a rule is carried over is a change to the script, and
+  the module is made again. The script and what it fetches stay out of
+  the tarball.
 - **Regexes from gitleaks are translated as D3 says:** compiled with
   `/a`, each anchor `$` written `\z`, and any that won't compile, or set
   the `m` flag, stop the script. The rules are kept as gitleaks has
