@@ -1,3 +1,78 @@
+# Messages
+
+## From Ekorn-Pipeline, 2026-11-15: how Iain and Claude work
+
+**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
+e4b9e8aa6b52627625906df1a5dac051aacfe2af)
+
+This repository was set up from Ekorn-Pipeline's session, where
+Text::Redact::Secrets was designed. That session's memory holds how
+Iain likes to work, learnt over its sessions; this one's memory starts
+empty. Save these in this project's memory, one fact to a file, as the
+memory instructions say, and tell Iain which you saved. Each came from
+Ekorn-Pipeline's memory, at
+`~/.claude/projects/-Users-icampbell-Git-github-com-nukopian-Ekorn-Pipeline/memory/`,
+which can be read for the detail, but never written to.
+
+- **Suggest commit messages.** Whenever asking Iain to commit, write
+  the message out in full, ready to paste: a conventional prefix, and
+  why as well as what. Never "the same message". His own commits carry
+  no Co-Authored-By trailer.
+- **Short cues on workflow.** Iain is fluent in Perl, and wants to
+  absorb workflow and good practice, conventional commits especially:
+  add a one-line cue on why a prefix or a step (why fast-forward, why
+  sign, why regenerate `META.json`). Asides, not lectures; drop one
+  once it's familiar.
+- **No explaining the trailer.** Apply CLAUDE.md's Co-Authored-By rule
+  silently. "We're a team."
+- **SSH keys:** if a push is refused or the agent seems empty, run
+  `source ~/.zsh.d/init.d/030-ssh.zsh` first; it loads Iain's keys
+  only if the agent has none. Never print the key names or paths, or
+  open its passphrase helper. If it still fails, check
+  githubstatus.com.
+- **Batch pushes.** Bursts of SSH connections to GitHub trip Iain's
+  UniFi IDS ("ET SCAN Potential SSH Scan OUTBOUND", 2003068): push
+  several refs in one `git push origin a b`, and don't pull straight
+  after a fetch.
+- **Full hashes, looked up.** Before writing a full commit hash
+  anywhere, run `git rev-parse` and paste what it prints; never extend
+  a short hash from memory. A wrong full hash once had to be corrected
+  in a second commit.
+- **Decisions in the repository.** No Claude Docs or GitHub issues for
+  decisions or planned work: decisions go in a record's Decisions,
+  discussed in the chat; planned work in `TODO.md`.
+- **Iain orchestrates the chain.** He switches between sessions
+  himself, and carries hand-offs informally. Use `TODO.md`'s tasks and
+  messages, but propose no more formal hand-off rules; when work for
+  the other session is done, say so in the reply, so he can carry it
+  on.
+- **Message declined changes.** When Iain considers a change to
+  something Ekorn-Pipeline uses (`redact`, `find`) and keeps it as it
+  is, send Ekorn-Pipeline a message anyway, with what was considered
+  and why it was kept.
+- **Epic changes design-first.** For a change across several items or
+  repositories: one design, proved by a prototype on a sandbox branch,
+  reviewed cold by fresh agents, its findings settled as numbered
+  decisions, and only then split into items.
+- **Perl, as Iain writes it:** no `goto &sub` tail calls, which he
+  says aren't cheap; call with `$code->(@args)`, or `&$code;` outside
+  a signature.
+- **Installing modules.** In Ekorn-Pipeline, a module already in
+  `perl-5.36.3@dbix-squirrel-2` may go into its libraries without
+  asking; anything else needs asking, naming it and why. Ask Iain
+  whether the same holds for this project's libraries before relying
+  on it.
+- **The sibling session.** Ekorn-Pipeline's session runs alongside this
+  one, with its own memory: read it if it helps, never write to it.
+  The two talk only through each other's `TODO.md`, as CLAUDE.md's
+  Planned work says, through a detached worktree, never by switching or
+  committing in the other's working copy. If Iain corrects a habit
+  here that the other session follows too, say its memory may need the
+  same change, and let him take it there.
+
+Remove this message once the memories are saved, in a commit saying
+which.
+
 # Planned work
 
 Setting up the repository, and starting roadmap 2026-0001, moved here
