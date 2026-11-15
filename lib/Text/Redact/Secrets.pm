@@ -134,12 +134,18 @@ sub _compile_keywords (@keywords) {
 }
 
 
+# Return an allowlist compiled for _allowed: its regexes, and its
+# stopwords, lowercased, as one regex that finds any of them, which Perl
+# makes into one fast search, where looking for each in turn would cost
+# as much as a rule.
 sub _compile_allowlist ($allowlist) {
+    my @stopwords = map { lc } @{ $allowlist->{stopwords} // [] };
+    my $any       = join '|', map { quotemeta } @stopwords;
     return {
         and       => ($allowlist->{condition} // 'OR') eq 'AND',
         target    => $allowlist->{regex_target} // 'secret',
         regexes   => [map { _regex($_) } @{ $allowlist->{regexes} // [] }],
-        stopwords => [map { lc } @{ $allowlist->{stopwords}       // [] }],
+        stopwords => @stopwords ? qr( $any )x : undef,
     };
 }
 
@@ -313,25 +319,35 @@ sub _allowed ($allowlist, $finding) {
     my $target = $finding->{$allowlist->{target}};
     my $regex  = $target ne '' && any { $target =~ $_ } @{ $allowlist->{regexes} };
     my $secret = lc $finding->{secret};
-    my $stop   = $secret ne '' && any { index($secret, $_) >= 0 }
-        @{ $allowlist->{stopwords} };
+    my $stop
+        = $secret ne ''
+        && $allowlist->{stopwords}
+        && $secret =~ $allowlist->{stopwords};
     return $regex || $stop unless $allowlist->{and};
 
     # Under AND, each that it has, as gitleaks' allTrue.
     my @checks;
     push @checks, $regex if @{ $allowlist->{regexes} };
-    push @checks, $stop  if @{ $allowlist->{stopwords} };
+    push @checks, $stop  if $allowlist->{stopwords};
     return all { $_ } @checks;
 }
 
 
 # Return the findings but those of a generic rule that a specific rule's
 # finding, starting on the same line, contains, as gitleaks' filter drops
-# them.
+# them. The specific rules' findings are looked up by their line, so that
+# each generic finding is checked against only those on its own line.
 sub _drop_generic (@found) {
+    my %specific;
+    for my $finding (@found) {
+        push @{ $specific{$finding->{line}} }, $finding unless _generic($finding);
+    }
     my @kept;
     for my $finding (@found) {
-        next if _generic($finding) && any { _supersedes($_, $finding) } @found;
+        next
+            if _generic($finding)
+            && any { index($_->{secret}, $finding->{secret}) >= 0 }
+            @{ $specific{$finding->{line}} // [] };
         push @kept, $finding;
     }
     return @kept;
@@ -343,16 +359,6 @@ sub _generic ($finding) {
     return index(lc $finding->{rule}, 'generic') >= 0;
 }
 
-
-# Return true if a specific rule's finding takes the place of a generic
-# rule's: on the same line, by another rule, and holding its secret.
-sub _supersedes ($specific, $generic) {
-    return
-           $specific->{line} == $generic->{line}
-        && $specific->{rule} ne $generic->{rule}
-        && !_generic($specific)
-        && index($specific->{secret}, $generic->{secret}) >= 0;
-}
 
 1;
 

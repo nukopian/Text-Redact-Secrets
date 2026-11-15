@@ -532,3 +532,12 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   20,000 characters, the slowest rule took 1.6 seconds, and takes 94 ms
   now; on 40,000, 187 ms. `t/02-rules.t` checks no rule begins with
   the doubled repeat, and the POD says what the module costs.
+- **The cost of each secret found,** which Ekorn-Pipeline measured
+  trying v1.0.1-TRIAL: 300 rows each with a password took 44 ms, where
+  rows with none took 1 ms. Two causes. Each generic finding was
+  checked against every other finding, to see if a specific rule's
+  held it, which grows with the square of the findings; now only those
+  on its own line are checked. And `generic-api-key`'s 1,446 stopwords
+  were each looked for in turn, in each secret; now one regex finds any
+  of them. 300 passwords take 13 ms, 600 take 26, and the same 554
+  texts find what they did.
