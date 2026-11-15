@@ -4,7 +4,7 @@ What Text-Redact-Secrets means to do, and why. [Changes](Changes)
 says what each release did, and the [README](README.md) what it is
 now.
 
-Last id: 2026-0002.
+Last id: 2026-0003.
 
 Items come in four groups:
 
@@ -74,3 +74,13 @@ five levels deep by default, and scans what it decodes too, so it finds
 a secret that's been encoded; Text::Redact::Secrets scans only the text
 as it is (2026-0001's record, step 3). Doing as gitleaks' `codec`
 package does would make the module as good at finding them.
+
+### 2026-0003. Rules from betterleaks
+
+**Added:** 2026-11-15. **Size:** M (3).
+
+gitleaks adds no more rules: its maintainer said so in April 2026,
+closing its issue 2089, and pointed to betterleaks as the next
+gitleaks. Whether betterleaks' rules should join or replace gitleaks'
+as where the module's come from, once its licence, its rules' format
+and how it releases them are checked (2026-0001's D12).
