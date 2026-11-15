@@ -612,8 +612,10 @@ this list.
 
 - **gitleaks** scans the whole history for secrets on every push, in
   `test.yml`'s `secrets` job, and by hand before a tag (step 1). Here,
-  the tests hold made-up secrets on purpose, so how gitleaks is told
-  they're made up is settled before the first is committed (TODO.md).
+  the tests hold made-up secrets on purpose, so each is built at run
+  time from pieces, and no line holds a whole one for gitleaks or push
+  protection to find; nothing is allowlisted
+  ([CLAUDE.md](../CLAUDE.md#tests) has the rule).
 - **Secret scanning and push protection** are to be on, as in
   Ekorn-Pipeline: push protection refuses a push with a recognised
   secret in it, before gitleaks would see it. It sees a test's made-up

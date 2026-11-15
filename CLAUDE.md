@@ -180,8 +180,11 @@ what was Iain's, and what was gitleaks'.
 - **Every secret in a test is made up,** and looks made up to a reader.
   The repository runs gitleaks on every push, and GitHub's push
   protection, both of which will find a test's secrets as they would a
-  real one's, so how they're told apart is settled before the first
-  test is committed (TODO.md).
+  real one's. So **no line holds a whole secret:** each is built at run
+  time from pieces, none of which matches a rule alone, as
+  `join '', 'AKIA', 'QZJTMADEUPKEYQZJ'`. Nothing is allowlisted,
+  neither `t/` nor a line with `gitleaks:allow`, so a real secret
+  pasted into a test is still found. Iain decided this on 2026-11-15.
 - **Coverage has floors, which it mustn't fall below.**
   `scripts/coverage` runs the tests under Devel::Cover, from an empty
   `cover_db`, and fails if the coverage of `lib/` falls below the floors

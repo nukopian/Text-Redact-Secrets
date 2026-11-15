@@ -3,26 +3,6 @@
 Setting up the repository, and starting roadmap 2026-0001, moved here
 from Ekorn-Pipeline. The tasks are in the order they're best done.
 
-## Tell gitleaks the tests' secrets are made up
-
-**From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
-e4b9e8aa6b52627625906df1a5dac051aacfe2af)
-**Waiting on:** nothing; settle before the first test with a secret is
-committed
-
-The tests hold secrets on purpose: made up, but shaped to match
-gitleaks' rules, which is the point. CI's `secrets` job runs gitleaks
-over the whole history, and GitHub's push protection checks each push,
-and both would find them, failing CI or refusing the push. Once
-committed, a secret is in the history for good, so this is settled
-first. Ways to weigh with Iain: a `.gitleaks.toml` that extends the
-default rules and allows `t/` (simple, but then a real secret pasted
-into a test is missed); `gitleaks:allow` on each line that holds one;
-or secrets built at run time from pieces, so no line holds one whole
-(also keeps push protection quiet). Done when the choice is in
-CLAUDE.md's Tests section, and a test with a made-up AWS key passes
-CI's `secrets` job.
-
 ## The script's dependencies
 
 **From:** Ekorn-Pipeline's session, 2026-11-15 (Ekorn-Pipeline
@@ -66,8 +46,10 @@ coverage floors in `scripts/coverage` once there's code to measure,
 as they're copied from Ekorn-Pipeline's. Its steps include the
 weekly CI job that fails when the module's gitleaks tag isn't
 gitleaks' latest, as Iain chose for D9 on 2026-11-15. Until there's a
-module and tests, CI's perl, style and coverage jobs fail. Done when
-the item is in Now and its record has its plan.
+module and tests, CI's perl, style and coverage jobs fail. The first
+test with a made-up AWS key, built from pieces as CLAUDE.md's Tests
+say, shows the rule works by passing CI's `secrets` job. Done when the
+item is in Now and its record has its plan.
 
 ## Make and protect `main`, at the first release
 
