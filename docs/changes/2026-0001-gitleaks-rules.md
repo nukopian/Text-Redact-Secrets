@@ -366,7 +366,8 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
   - **No decoding.** gitleaks' command line decodes base64, hex and
     percent-encoded text, five levels deep by default, and scans what
     it decodes too; the module doesn't, as the plan didn't have it, so
-    it misses what gitleaks finds only once decoded.
+    it misses what gitleaks finds only once decoded. It's an idea on
+    the roadmap, 2026-0002.
   - **The scan takes its rules as an argument,** so that
     `t/03-scan.t` tests it with rules made up there, needing no
     secrets. `find` and `redact` pass gitleaks' rules, compiled the
