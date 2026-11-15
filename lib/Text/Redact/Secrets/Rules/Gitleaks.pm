@@ -3421,12 +3421,14 @@ Text::Redact::Secrets::Rules::Gitleaks - gitleaks' rules, for Text::Redact::Secr
 
 =head1 DESCRIPTION
 
-The rules Text::Redact::Secrets finds secrets by: gitleaks'
-F<config/gitleaks.toml>, at its tag v8.30.1, carried over by the
-repository's F<scripts/update-rules>. Each regex is as gitleaks has it,
-but for each C<$> that's an anchor, written C<\z>, so that it means
-the end of the text, as it does in Go; each is to be compiled with
-C</a>. A rule or allowlist that applies only to files is left out.
+The rules Text::Redact::Secrets finds secrets by: those of
+L<gitleaks|https://github.com/gitleaks/gitleaks>, in its
+F<config/gitleaks.toml> at its tag v8.30.1, which is its commit
+83d9cd684c87d95d656cZ<>1458ef04895a7f1cbd8e, carried over by the repository's
+F<scripts/update-rules>. Each regex is as gitleaks has it, but for
+each C<$> that's an anchor, written C<\z>, so that it means the end
+of the text, as it does in Go; each is to be compiled with C</a>. A
+rule or allowlist that applies only to files is left out.
 
 =head1 FUNCTIONS
 
