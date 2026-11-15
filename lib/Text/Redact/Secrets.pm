@@ -2,28 +2,60 @@ use v5.36;
 
 package Text::Redact::Secrets;
 
-use Carp     qw(croak);
-use Exporter qw(import);
+use Carp       qw(croak);
+use Exporter   qw(import);
+use List::Util qw(all any);
+use POSIX      qw(log2);
+
+use Text::Redact::Secrets::Rules;
 
 our $VERSION = 'v1.0.0';
 
 our @EXPORT_OK = qw(find redact);
 
+my $REDACTED = '*REDACTED*';
+
+# A line holding this is passed over, as gitleaks passes it over.
+my $ALLOW = 'gitleaks:allow';
+
 # Return a copy of the string with each secret found replaced by
-# *REDACTED*. Until the scan is written (roadmap 2026-0001, step 3), it
-# finds nothing, so the copy is the string as it was.
+# *REDACTED*. Secrets that overlap, found by two rules, are replaced once.
 sub redact ($string) {
     _check_string($string, 'redact');
-    return $string;
+    return _redact($string, _rules());
+}
+
+
+# Return a copy of the string with each secret the compiled rules find
+# replaced by *REDACTED*.
+sub _redact ($string, $compiled) {
+    my $redacted = $string;
+    my @spans;
+    for my $found (_scan($string, $compiled)) {
+        my($start, $end)
+            = ($found->{offset}, $found->{offset} + length $found->{secret});
+        next if $start == $end;
+        if (@spans && $start < $spans[-1][1]) {
+            $spans[-1][1] = $end if $end > $spans[-1][1];
+        }
+        else {
+            push @spans, [$start, $end];
+        }
+    }
+    for my $span (reverse @spans) {
+        substr $redacted, $span->[0], $span->[1] - $span->[0], $REDACTED;
+    }
+    return $redacted;
 }
 
 
 # Return each secret found in the string, in the order it appears, as a
-# hash of its rule's id, the secret and its offset. Until the scan is
-# written, it finds nothing.
+# hash of its rule's id, the secret and its offset.
 sub find ($string) {
     _check_string($string, 'search');
-    return;
+    return map {
+        +{rule => $_->{rule}, secret => $_->{secret}, offset => $_->{offset}}
+    } _scan($string, _rules());
 }
 
 
@@ -31,6 +63,230 @@ sub find ($string) {
 sub _check_string ($string, $verb) {
     croak "Expected a string to $verb" if !defined $string || ref $string;
     return;
+}
+
+
+# Return gitleaks' rules and global allowlists, compiled the first time
+# they're wanted.
+sub _rules () {
+    state $rules = _compile(
+        Text::Redact::Secrets::Rules::rules(),
+        Text::Redact::Secrets::Rules::global_allowlists(),
+    );
+    return $rules;
+}
+
+
+# Return rules and global allowlists, as Text::Redact::Secrets::Rules
+# gives them, compiled for _scan: each regex with /a, keywords and
+# stopwords lowercased, as gitleaks does when it loads them.
+sub _compile ($rules, $globals) {
+    my @compiled = map {
+        +{
+            id           => $_->{id},
+            regex        => _regex($_->{regex}),
+            entropy      => $_->{entropy}      // 0,
+            secret_group => $_->{secret_group} // 0,
+            keywords     => $_->{keywords} && [map { lc } @{ $_->{keywords} }],
+            allowlists   => [map { _compile_allowlist($_) } @{ $_->{allowlists} // [] }],
+        }
+    } @$rules;
+    return {
+        rules      => \@compiled,
+        allowlists => [map { _compile_allowlist($_) } @$globals],
+    };
+}
+
+
+sub _compile_allowlist ($allowlist) {
+    return {
+        and       => ($allowlist->{condition} // 'OR') eq 'AND',
+        target    => $allowlist->{regex_target} // 'secret',
+        regexes   => [map { _regex($_) } @{ $allowlist->{regexes} // [] }],
+        stopwords => [map { lc } @{ $allowlist->{stopwords}       // [] }],
+    };
+}
+
+
+# Return one of gitleaks' regexes compiled as D3 says: with /a, as it's
+# written. A literal { that isn't a quantifier is read by Perl as by Go's
+# RE2, but Perl warns of it, so the warning is kept quiet.
+sub _regex ($source) {
+    no warnings qw(regexp);    ## no critic (TestingAndDebugging::ProhibitNoWarnings)
+    return qr($source)a;       ## no critic (RegularExpressions::RequireExtendedFormatting)
+}
+
+
+# Return the secrets the compiled rules find in the text, as gitleaks'
+# detector finds them in a string: each rule whose keywords are in the
+# text, or that has none, run over it, and the findings of a generic rule
+# that a specific rule's finding on the same line contains dropped. Each
+# is a hash of the rule's id, the secret and its offset, in the order the
+# secrets appear, then the rules' order.
+sub _scan ($text, $compiled) {
+    my $lower = lc $text;
+    my @found;
+    for my $rule (@{ $compiled->{rules} }) {
+        next
+            if $rule->{keywords} && !any { index($lower, $_) >= 0 }
+            @{ $rule->{keywords} };
+        push @found, _scan_rule($text, $rule, $compiled->{allowlists});
+    }
+    # By offset, and those at the same offset in the rules' order.
+    my %at;
+    push @{ $at{$_->{offset}} }, $_ for _drop_generic(@found);
+    return map { @{ $at{$_} } } sort { $a <=> $b } keys %at;
+}
+
+
+# Return the findings of one rule, as gitleaks' detectRule makes them.
+sub _scan_rule ($text, $rule, $globals) {
+    my $regex = $rule->{regex};
+    my @found;
+    while ($text =~ m( $regex )xg) {
+        my $start = $-[0];
+        my $match = substr $text, $start, $+[0] - $start;
+
+        # gitleaks trims newlines from the match, and its line is found
+        # from where the match starts, to where the match trimmed only of
+        # its trailing newlines would end.
+        my($leading) = $match =~ m( \A (\n*) )x;
+        $match =~ s( \A \n+ | \n+ \z )()xg;
+        my $line = _line($text, $start, $start + length $match);
+        next if index($line, $ALLOW) >= 0;
+
+        my($secret, $offset) = _secret($match, $rule) or next;
+        $offset += $start + length $leading;
+        next if $rule->{entropy} && _entropy($secret) <= $rule->{entropy};
+
+        my %finding = (secret => $secret, match => $match, line => $line);
+        next if any { _allowed($_, \%finding) } @$globals, @{ $rule->{allowlists} };
+
+        push @found, {
+            rule   => $rule->{id},
+            secret => $secret,
+            offset => $offset,
+            line   => substr($text, 0, $start) =~ tr(\n)(),
+        };
+    }
+    return @found;
+}
+
+
+# Return the secret in a match, and where it starts in the match, as D8
+# says: gitleaks runs the rule's regex again, on the match alone, and
+# takes the group the rule names, or else the first group that isn't
+# empty, or else the whole match. Return nothing if the rule names a
+# group its regex doesn't have, as gitleaks passes the match over.
+sub _secret ($match, $rule) {
+    my $regex   = $rule->{regex};
+    my $matched = $match =~ m( $regex )x;
+    return ($match, 0) if !$matched || $#+ < 1;
+    my $groups = $#+;
+    my $group  = $rule->{secret_group};
+    if ($group) {
+        return if $group > $groups;
+        return
+            defined $-[$group]
+            ? (substr($match, $-[$group], $+[$group] - $-[$group]), $-[$group])
+            : ('', 0);
+    }
+    for my $i (1 .. $groups) {
+        next if !defined $-[$i] || $+[$i] == $-[$i];
+        return substr($match, $-[$i], $+[$i] - $-[$i]), $-[$i];
+    }
+    return ($match, 0);
+}
+
+
+# Return the line gitleaks checks a match's allowlists and
+# gitleaks:allow against, as its location() finds it: from the newline
+# before the match, or the start of the text, to the newline after it.
+# A match after the last newline gets the text from its start.
+sub _line ($text, $start, $end) {
+    my @newlines;
+    push @newlines, $-[0] while $text =~ m( \n )xg;
+    @newlines = (length $text) unless @newlines;
+
+    my($previous, $from, $to, $on_a_line) = (0, 0, 0, 0);
+    for my $newline (@newlines) {
+        if ($previous <= $start && $start < $newline) {
+            ($from, $to, $on_a_line) = ($previous, $newline, 1);
+        }
+        $to       = $newline if $previous < $end && $end <= $newline;
+        $previous = $newline;
+    }
+    if (!$on_a_line) {
+        my($rest) = substr($text, $end) =~ m( \A ([^\r\n]*) )x;
+        $to = $end + length $rest;
+    }
+    $to = $end if $end > $to;
+    return substr $text, $from, $to - $from;
+}
+
+
+# Return the Shannon entropy of a string, in bits, over its characters,
+# as gitleaks reckons it (D5).
+sub _entropy ($string) {
+    my $length = length $string or return 0;
+    my %count;
+    $count{substr $string, $_, 1}++ for 0 .. $length - 1;
+    my $entropy = 0;
+    for my $count (values %count) {
+        my $frequency = $count / $length;
+        $entropy -= $frequency * log2($frequency);
+    }
+    return $entropy;
+}
+
+
+# Return true if an allowlist passes over a finding, as gitleaks'
+# checkFindingAllowed decides: its regexes are matched against what its
+# target says, and its stopwords looked for in the secret, lowercased;
+# under AND, both must, where it has them, and under OR, either.
+sub _allowed ($allowlist, $finding) {
+    my $target = $finding->{$allowlist->{target}};
+    my $regex  = $target ne '' && any { $target =~ $_ } @{ $allowlist->{regexes} };
+    my $secret = lc $finding->{secret};
+    my $stop   = $secret ne '' && any { index($secret, $_) >= 0 }
+        @{ $allowlist->{stopwords} };
+    return $regex || $stop unless $allowlist->{and};
+
+    # Under AND, each that it has, as gitleaks' allTrue.
+    my @checks;
+    push @checks, $regex if @{ $allowlist->{regexes} };
+    push @checks, $stop  if @{ $allowlist->{stopwords} };
+    return all { $_ } @checks;
+}
+
+
+# Return the findings but those of a generic rule that a specific rule's
+# finding, starting on the same line, contains, as gitleaks' filter drops
+# them.
+sub _drop_generic (@found) {
+    my @kept;
+    for my $finding (@found) {
+        next if _generic($finding) && any { _supersedes($_, $finding) } @found;
+        push @kept, $finding;
+    }
+    return @kept;
+}
+
+
+# Return true if a finding is by a generic rule.
+sub _generic ($finding) {
+    return index(lc $finding->{rule}, 'generic') >= 0;
+}
+
+
+# Return true if a specific rule's finding takes the place of a generic
+# rule's: on the same line, by another rule, and holding its secret.
+sub _supersedes ($specific, $generic) {
+    return
+           $specific->{line} == $generic->{line}
+        && $specific->{rule} ne $generic->{rule}
+        && !_generic($specific)
+        && index($specific->{secret}, $generic->{secret}) >= 0;
 }
 
 1;
@@ -73,7 +329,9 @@ Nothing is exported unless asked for.
     my $safe = redact($text);
 
 Returns a copy of C<$text> with each secret found in it replaced by
-C<*REDACTED*>. C<$text> itself is left as it was.
+C<*REDACTED*>. C<$text> itself is left as it was. Where two rules find
+secrets that overlap, the text they cover between them is replaced
+once.
 
 =head2 find
 

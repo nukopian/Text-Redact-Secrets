@@ -340,3 +340,35 @@ and Ekorn-Pipeline is told, in its `TODO.md`, that the release is out.
     them rather than escaping the brace.
   - **`t/02-rules.t`** checks the module of rules is whole, and keeps
     coverage at its floors.
+- **Step 3, the scan,** in `lib/Text/Redact/Secrets.pm`, as gitleaks'
+  `detect/detect.go` at v8.30.1 runs its rules on a string. Checked
+  against the gitleaks binary, v8.30.1, run on standard input with
+  decoding off: each of the 381 strings in gitleaks' Go sources' true
+  and false positives, and 173 texts made by joining them, ten at a
+  time, by newlines, by spaces, and as Data::Dumper dumps. Every one
+  found the same rules and secrets. The joined texts found one bug,
+  in the line an allowlist matches against, since fixed. Changes from
+  the plan, and what it settles beyond it:
+  - **Keywords are looked for one at a time,** each with `index` in
+    the text lowercased, not by one regex of every keyword, as D4 had
+    it. gitleaks' Aho-Corasick finds every keyword in the text,
+    overlapping ones too, which one alternation can't: it finds one
+    keyword at each place. What D4 settled, that a rule runs only if
+    one of its keywords is in the text, is as it was. Its cost is
+    step 5's to measure.
+  - **What gitleaks does beyond D3 to D8 is done as it does it:** the
+    match trimmed of newlines; the regex run again on the match alone
+    to find the secret's group; a line holding `gitleaks:allow` passed
+    over; the line an allowlist with `regexTarget = "line"` matches
+    found as gitleaks' `location()` finds it, quirks and all; and a
+    finding of a rule whose id holds "generic" dropped when another
+    rule's finding on the same line holds its secret.
+  - **No decoding.** gitleaks' command line decodes base64, hex and
+    percent-encoded text, five levels deep by default, and scans what
+    it decodes too; the module doesn't, as the plan didn't have it, so
+    it misses what gitleaks finds only once decoded.
+  - **The scan takes its rules as an argument,** so that
+    `t/03-scan.t` tests it with rules made up there, needing no
+    secrets. `find` and `redact` pass gitleaks' rules, compiled the
+    first time they're wanted, each regex with `/a` and the `regexp`
+    warning quiet, as Iain decided in step 2.
