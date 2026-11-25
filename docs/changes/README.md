@@ -80,5 +80,7 @@ Steps, Done when.
 
 Newest id first.
 
+- [CI installs only what each job needs](2026-0008-ci-installs.md),
+  a TODO task from Ekorn-Pipeline's 2026-0047: in progress.
 - [A module of gitleaks' rules](2026-0001-gitleaks-rules.md), roadmap
   2026-0001: shipped in v1.0.2, moved from Ekorn-Pipeline 2026-0037.
