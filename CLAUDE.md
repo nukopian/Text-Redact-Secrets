@@ -207,7 +207,11 @@ what was Iain's, and what was gitleaks'.
   pasted into a test is still found. Iain decided this on 2026-11-15.
   The one exception is `.gitleaksignore`, which passes over a single
   finding in history that isn't a secret, by its fingerprint, each a
-  decision of Iain's with its reason (2026-0001's D14).
+  decision of Iain's with its reason (2026-0001's D14). Claude changes
+  `.gitleaksignore`, and a `.betterleaks.toml` once there is one, only
+  with its Edit tool, never from the shell: a rule in Iain's settings
+  makes each such edit ask him, as he set up on 2026-11-25, where auto
+  mode refuses a change to a scanner's allowlist made from the shell.
 - **Coverage has floors, which it mustn't fall below.**
   `scripts/coverage` runs the tests under Devel::Cover, from an empty
   `cover_db`, and fails if the coverage of `lib/` falls below the floors

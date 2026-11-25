@@ -465,8 +465,21 @@ unsigned tag, and pushes both. `minil prepare` sets the version,
    ```
 
    Every line should end `completed success`. If one doesn't, see
-   [When something goes wrong](#when-something-goes-wrong). Then merge.
-   It's a fast-forward, so `main` gets exactly the commits CI tested on
+   [When something goes wrong](#when-something-goes-wrong).
+
+   Then check `TODO.md` once more. Ekorn-Pipeline's session can add a
+   task or a message at any time, and step 1's check may be too early
+   to see it, as Ekorn's v0.4.2 found. If the pull brings anything, or
+   `TODO.md` is there, deal with it as step 1 says, wait for CI on the
+   new `develop`, and check its runs again:
+
+   ```sh
+   cd ~/Git/github.com/nukopian/Text-Redact-Secrets
+   git pull --ff-only
+   if [ -e TODO.md ]; then cat TODO.md; else echo "no TODO.md"; fi
+   ```
+
+   Then merge. It's a fast-forward, so `main` gets exactly the commits CI tested on
    `develop`, with their signatures. Set the version on the first
    line:
 
