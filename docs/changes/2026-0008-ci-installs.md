@@ -1,6 +1,6 @@
 # 2026-0008. CI installs only what each job needs, and caches it
 
-**Status:** in progress
+**Status:** shipped, unreleased
 
 **Decisions:** D1 settled: Windows installs as before, uncached. D2
 settled: the test jobs name only Test2::Harness and UUID of the
@@ -11,6 +11,8 @@ develop modules. None open.
 2026-0047)
 
 **Started:** 2026-11-25, in 4800583cd9c41c99a4dc1d03ac0377d56e37fd7f
+
+**Finished:** 2026-11-25
 
 ## Background
 
@@ -82,3 +84,25 @@ installed afresh on every push.
 timings are here, beside those above.
 
 ## What happened
+
+- **Outcome:** done. Every job passed on both runs: 45715844175, the
+  push of dfa95d17b6ff52ad862ffd8a8ec923a6238bacab, which filled the
+  eight caches, one for each job but Windows' and `secrets`, and
+  45716177241, started by hand on the same commit, in which each of
+  those jobs restored its own cache.
+- **Changes from the plan:** none.
+- **Measurements,** each job as GitHub timed it, without the wait for a
+  runner, with the setup-perl step, which now installs, beside it:
+
+  | Job | Before | Filling the caches | Using them | setup-perl, using them |
+  |---|---|---|---|---|
+  | perl 5.36 to 5.44 (ubuntu-24.04) | 62 to 86 s | 25 to 32 s | 7 to 15 s | 2 to 3 s |
+  | perl 5.44 (macos-26) | 103 to 138 s | 53 s | 17 s | 7 s |
+  | perl 5.36, 5.44 (windows-2025), unchanged | 16 to 42 s | 26 to 33 s | 21 to 24 s | 4 s, then 4 to 9 s installing |
+  | style | 62 to 70 s | 92 s | 12 s | 3 s |
+  | coverage | 74 to 79 s | 119 s | 19 s | 2 s |
+
+  The test jobs were faster even when filling the caches, as they no
+  longer install the develop modules but yath and UUID.
+- **What's left:** nothing. A change to the `cpanfile` makes each job
+  install afresh what its restored cache lacks, once.
